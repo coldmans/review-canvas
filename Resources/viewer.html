@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Review Canvas</title>
+    <style>
+        :root {
+            color-scheme: light dark;
+            --canvas: #f6f7f9;
+            --error-background: #fff0f0;
+            --error-border: #e05252;
+            --error-text: #8f1d1d;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --canvas: #17181b;
+                --error-background: #351c1f;
+                --error-border: #ff7b7b;
+                --error-text: #ffd2d2;
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            overflow: auto;
+            background: var(--canvas);
+            font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", sans-serif;
+        }
+
+        #viewport {
+            display: flex;
+            min-width: 100%;
+            min-height: 100%;
+            padding: 48px;
+        }
+
+        #diagram {
+            display: flex;
+            flex: 0 0 auto;
+            min-height: 1px;
+            align-items: center;
+            justify-content: center;
+            margin: auto;
+        }
+
+        #diagram svg {
+            display: block;
+            max-width: none !important;
+            max-height: none !important;
+        }
+
+        .error {
+            width: min(720px, calc(100vw - 64px));
+            padding: 20px;
+            border: 1px solid var(--error-border);
+            border-radius: 14px;
+            background: var(--error-background);
+            color: var(--error-text);
+            box-shadow: 0 12px 30px rgb(0 0 0 / 10%);
+        }
+
+        .error h2 {
+            margin: 0 0 10px;
+            font-size: 17px;
+        }
+
+        .error pre {
+            margin: 0;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+        }
+    </style>
+</head>
+<body>
+    <main id="viewport">
+        <section id="diagram" aria-live="polite"></section>
+    </main>
+
+    <script src="mermaid.min.js"></script>
+    <script>
+        function reportStatus(type, message = "") {
+            window.webkit?.messageHandlers?.mermaidStatus?.postMessage({ type, message });
+        }
+
+        function showError(error) {
+            const host = document.getElementById("diagram");
+            host.replaceChildren();
+
+            const card = document.createElement("div");
+            card.className = "error";
+
+            const title = document.createElement("h2");
+            title.textContent = "Mermaid 문법을 확인해주세요";
+
+            const details = document.createElement("pre");
+            details.textContent = error?.message ?? String(error);
+
+            card.append(title, details);
+            host.append(card);
+        }
+
+        window.addEventListener("error", event => {
+            showError(event.error ?? event.message);
+            reportStatus("error", event.message);
+        });
+
+        window.addEventListener("unhandledrejection", event => {
+            showError(event.reason);
+            reportStatus("error", event.reason?.message ?? String(event.reason));
+        });
+
+        try {
+            const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+            let renderSequence = 0;
+            let currentZoom = 1;
+
+            function applyZoom() {
+                const svg = document.querySelector("#diagram svg");
+                if (!svg?.viewBox?.baseVal) {
+                    return;
+                }
+
+                const viewBox = svg.viewBox.baseVal;
+                if (viewBox.width <= 0 || viewBox.height <= 0) {
+                    return;
+                }
+
+                const availableWidth = Math.max(100, window.innerWidth - 96);
+                const availableHeight = Math.max(100, window.innerHeight - 96);
+                const fitScale = Math.min(
+                    1,
+                    availableWidth / viewBox.width,
+                    availableHeight / viewBox.height
+                );
+                const renderedScale = fitScale * currentZoom;
+
+                svg.style.setProperty("width", `${viewBox.width * renderedScale}px`, "important");
+                svg.style.setProperty("height", `${viewBox.height * renderedScale}px`, "important");
+            }
+
+            window.setDiagramZoom = function (zoom) {
+                currentZoom = Math.min(2.5, Math.max(0.5, Number(zoom) || 1));
+                applyZoom();
+            };
+
+            window.addEventListener("resize", applyZoom);
+
+            mermaid.initialize({
+                startOnLoad: false,
+                securityLevel: "strict",
+                theme: isDarkMode ? "dark" : "default",
+                flowchart: {
+                    htmlLabels: true,
+                    useMaxWidth: true
+                }
+            });
+
+            window.renderMermaid = async function (source) {
+                const host = document.getElementById("diagram");
+                host.replaceChildren();
+
+                try {
+                    await mermaid.parse(source);
+                    const renderId = `mermaid-viewer-${++renderSequence}`;
+                    const result = await mermaid.render(renderId, source);
+                    host.innerHTML = result.svg;
+
+                    if (result.bindFunctions) {
+                        result.bindFunctions(host);
+                    }
+                    applyZoom();
+                    reportStatus("rendered");
+                } catch (error) {
+                    showError(error);
+                    reportStatus("error", error?.message ?? String(error));
+                }
+            };
+
+            reportStatus("ready");
+        } catch (error) {
+            showError(error);
+            reportStatus("error", error?.message ?? String(error));
+        }
+    </script>
+</body>
+</html>

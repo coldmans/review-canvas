@@ -1,0 +1,10 @@
+{
+  "name": "review-canvas",
+  "private": true,
+  "version": "1.0.0",
+  "description": "AI-connected Mermaid review canvas for macOS and iPadOS",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "mermaid": "11.16.0"
+  }
+}
