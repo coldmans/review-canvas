@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
     <title>Review Canvas</title>
     <style>
         :root {
@@ -90,8 +91,12 @@
 
     <script src="mermaid.min.js"></script>
     <script>
-        function reportStatus(type, message = "") {
-            window.webkit?.messageHandlers?.mermaidStatus?.postMessage({ type, message });
+        function reportStatus(type, message = "", details = {}) {
+            window.webkit?.messageHandlers?.mermaidStatus?.postMessage({
+                type,
+                message,
+                ...details
+            });
         }
 
         function showError(error) {
@@ -125,6 +130,42 @@
             const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
             let renderSequence = 0;
             let currentZoom = 1;
+            let geometryFrame;
+
+            function reportGeometry() {
+                window.cancelAnimationFrame(geometryFrame);
+                geometryFrame = window.requestAnimationFrame(() => {
+                    const svg = document.querySelector("#diagram svg");
+                    if (!svg) {
+                        return;
+                    }
+
+                    const rect = svg.getBoundingClientRect();
+                    const viewportWidth = Math.max(1, window.innerWidth);
+                    const viewportHeight = Math.max(1, window.innerHeight);
+                    const viewBox = svg.viewBox.baseVal;
+                    const nodes = viewBox.width > 0 && viewBox.height > 0
+                        ? Array.from(svg.querySelectorAll(".node[id]")).map(node => {
+                            const bounds = node.getBBox();
+                            return {
+                                id: node.id,
+                                x: (bounds.x - viewBox.x) / viewBox.width,
+                                y: (bounds.y - viewBox.y) / viewBox.height,
+                                width: bounds.width / viewBox.width,
+                                height: bounds.height / viewBox.height
+                            };
+                        })
+                        : [];
+
+                    reportStatus("geometry", "", {
+                        x: rect.left / viewportWidth,
+                        y: rect.top / viewportHeight,
+                        width: rect.width / viewportWidth,
+                        height: rect.height / viewportHeight,
+                        nodes
+                    });
+                });
+            }
 
             function applyZoom() {
                 const svg = document.querySelector("#diagram svg");
@@ -148,6 +189,7 @@
 
                 svg.style.setProperty("width", `${viewBox.width * renderedScale}px`, "important");
                 svg.style.setProperty("height", `${viewBox.height * renderedScale}px`, "important");
+                reportGeometry();
             }
 
             window.setDiagramZoom = function (zoom) {
@@ -156,6 +198,7 @@
             };
 
             window.addEventListener("resize", applyZoom);
+            window.addEventListener("scroll", reportGeometry, true);
 
             mermaid.initialize({
                 startOnLoad: false,
@@ -181,6 +224,7 @@
                         result.bindFunctions(host);
                     }
                     applyZoom();
+                    reportGeometry();
                     reportStatus("rendered");
                 } catch (error) {
                     showError(error);
