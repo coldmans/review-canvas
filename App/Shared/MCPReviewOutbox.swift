@@ -142,6 +142,20 @@ private struct MCPReviewExportEnvelope: Encodable {
             case source
             case createdAt
         }
+
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(id, forKey: .id)
+            if let parentRevisionID {
+                try container.encode(parentRevisionID, forKey: .parentRevisionID)
+            } else {
+                try container.encodeNil(forKey: .parentRevisionID)
+            }
+            try container.encode(sequence, forKey: .sequence)
+            try container.encode(status, forKey: .status)
+            try container.encode(source, forKey: .source)
+            try container.encode(createdAt, forKey: .createdAt)
+        }
     }
 
     struct Mark: Encodable {
@@ -183,6 +197,25 @@ private struct MCPReviewExportEnvelope: Encodable {
             case createdAt
             case updatedAt
             case resolvedAt
+        }
+
+        func encode(to encoder: any Encoder) throws {
+            var container = encoder.container(keyedBy: CodingKeys.self)
+            try container.encode(id, forKey: .id)
+            try container.encode(diagramID, forKey: .diagramID)
+            try container.encode(revisionID, forKey: .revisionID)
+            try container.encode(type, forKey: .type)
+            try container.encode(symbol, forKey: .symbol)
+            try container.encode(body, forKey: .body)
+            try container.encode(status, forKey: .status)
+            try container.encode(anchor, forKey: .anchor)
+            try container.encode(createdAt, forKey: .createdAt)
+            try container.encode(updatedAt, forKey: .updatedAt)
+            if let resolvedAt {
+                try container.encode(resolvedAt, forKey: .resolvedAt)
+            } else {
+                try container.encodeNil(forKey: .resolvedAt)
+            }
         }
     }
 }

@@ -153,10 +153,15 @@ final class DeviceSyncBehaviorTests: XCTestCase {
         )
         XCTAssertEqual(json["schemaVersion"] as? Int, 1)
         XCTAssertEqual(json["exportId"] as? String, files[0].deletingPathExtension().lastPathComponent.dropFirst(7).description)
+        let revision = try XCTUnwrap(json["revision"] as? [String: Any])
+        XCTAssertTrue(revision.keys.contains("parentRevisionId"))
+        XCTAssertTrue(revision["parentRevisionId"] is NSNull)
         let marks = try XCTUnwrap(json["marks"] as? [[String: Any]])
         XCTAssertEqual(marks[0]["diagramId"] as? String, diagramID.uuidString)
         XCTAssertEqual(marks[0]["revisionId"] as? String, revisionID.uuidString)
         XCTAssertEqual(marks[0]["symbol"] as? String, "!")
+        XCTAssertTrue(marks[0].keys.contains("resolvedAt"))
+        XCTAssertTrue(marks[0]["resolvedAt"] is NSNull)
     }
 
     func testWireCodecRejectsOversizedMessagesBeforeDecoding() throws {
