@@ -186,13 +186,13 @@ final class LocalNetworkPeerTransport: LocalPeerTransporting {
                     return
                 }
                 if let data, !data.isEmpty {
-                    eventHandler?(.received(data))
+                    self.eventHandler?(.received(data))
                 }
                 if let error {
-                    eventHandler?(.connectionState(.failed(message: error.localizedDescription)))
+                    self.eventHandler?(.connectionState(.failed(message: error.localizedDescription)))
                     return
                 }
-                receiveNextMessage(on: connection)
+                self.receiveNextMessage(on: connection)
             }
         }
     }
