@@ -11,9 +11,17 @@ final class ReviewCanvasUITests: XCTestCase {
         app.launchArguments = ["-ui-testing"]
         app.launch()
 
-        XCTAssertTrue(app.buttons["review-type-explain"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["review-type-change"].exists)
-        XCTAssertTrue(app.buttons["review-type-verify"].exists)
+        let intents = [
+            (identifier: "review-type-explain", label: "설명"),
+            (identifier: "review-type-change", label: "수정"),
+            (identifier: "review-type-verify", label: "검토"),
+        ]
+
+        for intent in intents {
+            let button = app.buttons[intent.identifier]
+            XCTAssertTrue(button.waitForExistence(timeout: 5))
+            XCTAssertEqual(button.label, intent.label)
+        }
     }
 
     func testSampleDiagramCanReceiveAndResolveAReviewMark() throws {

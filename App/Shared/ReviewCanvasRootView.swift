@@ -76,6 +76,8 @@ private struct ReviewToolbar: View {
         HStack(spacing: 12) {
             Button(action: openFile) {
                 Label("열기", systemImage: "folder")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .buttonStyle(.bordered)
 
@@ -91,6 +93,8 @@ private struct ReviewToolbar: View {
 
             Button(action: showSync) {
                 Label(syncController.toolbarTitle, systemImage: syncController.toolbarSymbol)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .buttonStyle(.bordered)
             .accessibilityIdentifier("device-sync")
@@ -107,6 +111,8 @@ private struct ReviewToolbar: View {
                 }
             } label: {
                 Label("필기", systemImage: workspace.isInkMode ? "pencil.tip.crop.circle.badge.plus" : "pencil.tip")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .modifier(ReviewSelectionButtonStyle(isSelected: workspace.isInkMode))
             .accessibilityIdentifier("pencil-mode")
@@ -127,8 +133,11 @@ private struct ReviewToolbar: View {
                     Text("검토 \(workspace.currentReviewMarks.filter { $0.status != .resolved }.count)개 대기")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
             }
+            .frame(minWidth: 80, idealWidth: 140, maxWidth: 180, alignment: .trailing)
+            .layoutPriority(1)
 
             HStack(spacing: 4) {
                 Button(action: workspace.zoomOut) {
@@ -144,6 +153,8 @@ private struct ReviewToolbar: View {
                 }
             }
             .buttonStyle(.borderless)
+            .fixedSize(horizontal: true, vertical: false)
+            .layoutPriority(2)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -237,15 +248,24 @@ private struct ReviewTypePicker: View {
                     let isAlreadySelected = workspace.selectedReviewType == type
                     workspace.selectedReviewType = isAlreadySelected ? nil : type
                 } label: {
+                    #if os(iOS)
+                    Image(systemName: type.toolbarSystemImage)
+                        .font(.body.weight(.bold))
+                        .frame(width: 28, height: 28)
+                    #else
                     HStack(spacing: 5) {
                         Text(type.displaySymbol).fontWeight(.bold)
                         Text(type.localizedTitle)
+                            .lineLimit(1)
                     }
+                    #endif
                 }
                 .modifier(
                     ReviewSelectionButtonStyle(isSelected: workspace.selectedReviewType == type)
                 )
                 .tint(type.tint)
+                .accessibilityLabel(type.localizedTitle)
+                .accessibilityHint("다이어그램에 \(type.localizedTitle) 표시 추가")
                 .accessibilityIdentifier("review-type-\(type.rawValue)")
             }
         }
@@ -505,6 +525,17 @@ private extension ReviewMarkType {
             return .orange
         case .verify:
             return .red
+        }
+    }
+
+    var toolbarSystemImage: String {
+        switch self {
+        case .explain:
+            return "questionmark"
+        case .change:
+            return "pencil"
+        case .verify:
+            return "exclamationmark"
         }
     }
 }
