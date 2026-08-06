@@ -1,0 +1,23 @@
+{
+  "name": "@review-canvas/mcp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local stdio MCP server for the Review Canvas inbox",
+  "bin": {
+    "review-canvas-mcp": "./bin/review-canvas-mcp.js"
+  },
+  "scripts": {
+    "start": "node ./bin/review-canvas-mcp.js",
+    "test": "node --test --test-concurrency=1",
+    "test:coverage": "node --test --test-concurrency=1 --experimental-test-coverage --test-coverage-include='src/**/*.js' --test-coverage-lines=80 --test-coverage-functions=80 --test-coverage-branches=80"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "mermaid": "11.16.1",
+    "zod": "4.4.3"
+  }
+}

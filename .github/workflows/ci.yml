@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: review-canvas-ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Core, MCP, macOS, iPadOS
+    runs-on: macos-15
+    timeout-minutes: 30
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            mcp/package-lock.json
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Install app resources
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Install MCP dependencies
+        working-directory: mcp
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Test viewer geometry
+        run: npm test
+
+      - name: Test ReviewCanvasCore
+        run: swift test --package-path Packages/ReviewCanvasCore
+
+      - name: Test local MCP
+        working-directory: mcp
+        run: npm test
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Validate local network declarations
+        run: |
+          plutil -lint App/macOS/Info.plist App/iPadOS/Info.plist
+          test "$(plutil -extract NSBonjourServices.0 raw App/macOS/Info.plist)" = "_reviewcanvas._tcp"
+          test "$(plutil -extract NSBonjourServices.0 raw App/iPadOS/Info.plist)" = "_reviewcanvas._tcp"
+          plutil -extract NSLocalNetworkUsageDescription raw App/macOS/Info.plist >/dev/null
+          plutil -extract NSLocalNetworkUsageDescription raw App/iPadOS/Info.plist >/dev/null
+
+      - name: Test macOS app
+        run: |
+          xcodebuild \
+            -project ReviewCanvas.xcodeproj \
+            -scheme ReviewCanvas-macOS \
+            -configuration Debug \
+            -destination 'platform=macOS' \
+            -derivedDataPath "$RUNNER_TEMP/ReviewCanvas-macOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            test
+
+      - name: Build iPadOS app and UI tests
+        run: |
+          xcodebuild \
+            -project ReviewCanvas.xcodeproj \
+            -scheme ReviewCanvas-iPadOS \
+            -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/ReviewCanvas-iPadOS" \
+            CODE_SIGNING_ALLOWED=NO \
+            build-for-testing

@@ -4,7 +4,10 @@
   "version": "1.0.0",
   "description": "AI-connected Mermaid review canvas for macOS and iPadOS",
   "license": "UNLICENSED",
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "dependencies": {
-    "mermaid": "11.16.0"
+    "mermaid": "11.16.1"
   }
 }

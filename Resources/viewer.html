@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; font-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'">
     <title>Review Canvas</title>
     <style>
         :root {
@@ -88,10 +89,15 @@
         <section id="diagram" aria-live="polite"></section>
     </main>
 
+    <script src="viewer-geometry.js"></script>
     <script src="mermaid.min.js"></script>
     <script>
-        function reportStatus(type, message = "") {
-            window.webkit?.messageHandlers?.mermaidStatus?.postMessage({ type, message });
+        function reportStatus(type, message = "", details = {}) {
+            window.webkit?.messageHandlers?.mermaidStatus?.postMessage({
+                type,
+                message,
+                ...details
+            });
         }
 
         function showError(error) {
@@ -125,6 +131,43 @@
             const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
             let renderSequence = 0;
             let currentZoom = 1;
+            let currentRenderID = null;
+            let geometryFrame;
+
+            function reportGeometry() {
+                window.cancelAnimationFrame(geometryFrame);
+                geometryFrame = window.requestAnimationFrame(() => {
+                    const svg = document.querySelector("#diagram svg");
+                    if (!svg) {
+                        return;
+                    }
+
+                    const rect = svg.getBoundingClientRect();
+                    const viewportWidth = Math.max(1, window.innerWidth);
+                    const viewportHeight = Math.max(1, window.innerHeight);
+                    const nodes = Array.from(svg.querySelectorAll(".node[data-id], .node[id]"))
+                        .map(node => {
+                            const normalized = window.ReviewCanvasGeometry.normalizeRect(
+                                rect,
+                                node.getBoundingClientRect()
+                            );
+                            const id = window.ReviewCanvasGeometry.semanticNodeID(
+                                node,
+                                currentRenderID
+                            );
+                            return normalized && id ? { id, ...normalized } : null;
+                        })
+                        .filter(Boolean);
+
+                    reportStatus("geometry", "", {
+                        x: rect.left / viewportWidth,
+                        y: rect.top / viewportHeight,
+                        width: rect.width / viewportWidth,
+                        height: rect.height / viewportHeight,
+                        nodes
+                    });
+                });
+            }
 
             function applyZoom() {
                 const svg = document.querySelector("#diagram svg");
@@ -148,6 +191,7 @@
 
                 svg.style.setProperty("width", `${viewBox.width * renderedScale}px`, "important");
                 svg.style.setProperty("height", `${viewBox.height * renderedScale}px`, "important");
+                reportGeometry();
             }
 
             window.setDiagramZoom = function (zoom) {
@@ -156,6 +200,7 @@
             };
 
             window.addEventListener("resize", applyZoom);
+            window.addEventListener("scroll", reportGeometry, true);
 
             mermaid.initialize({
                 startOnLoad: false,
@@ -169,20 +214,37 @@
 
             window.renderMermaid = async function (source) {
                 const host = document.getElementById("diagram");
+                const requestSequence = ++renderSequence;
+                const renderId = `mermaid-viewer-${requestSequence}`;
+                currentRenderID = null;
+                window.cancelAnimationFrame(geometryFrame);
                 host.replaceChildren();
+                reportStatus("rendering");
 
                 try {
                     await mermaid.parse(source);
-                    const renderId = `mermaid-viewer-${++renderSequence}`;
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
+
                     const result = await mermaid.render(renderId, source);
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
+
+                    currentRenderID = renderId;
                     host.innerHTML = result.svg;
 
                     if (result.bindFunctions) {
                         result.bindFunctions(host);
                     }
                     applyZoom();
+                    reportGeometry();
                     reportStatus("rendered");
                 } catch (error) {
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
                     showError(error);
                     reportStatus("error", error?.message ?? String(error));
                 }
