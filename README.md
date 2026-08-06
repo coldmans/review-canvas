@@ -1,8 +1,8 @@
 # Review Canvas
 
-AI가 만든 Mermaid 다이어그램을 Mac에서 받아 보고, iPad와 Apple Pencil로 표시하며 검토하는 네이티브 앱의 로컬 MVP입니다.
+AI가 만든 Mermaid 다이어그램을 Mac에서 받아 같은 네트워크의 iPad로 즉시 보내고, Apple Pencil 검토 결과를 다시 AI에게 돌려주는 네이티브 앱입니다.
 
-현재 저장소에는 macOS와 iPadOS가 함께 쓰는 SwiftUI 앱, 검토 표시 도메인, PencilKit 필기 레이어, 로컬 stdio MCP 서버가 구현되어 있습니다. 아직 App Store 배포 버전은 아니며, Mac과 iPad 사이의 실제 데이터 동기화는 후속 범위입니다.
+현재 저장소에는 macOS와 iPadOS가 함께 쓰는 SwiftUI 앱, Network.framework 기반 암호화 동기화, PencilKit 필기 레이어, 로컬 stdio MCP 서버와 앱→MCP 검토 bridge가 구현되어 있습니다. 아직 App Store 배포 버전은 아닙니다.
 
 ## 지금 가능한 흐름
 
@@ -10,7 +10,7 @@ AI가 만든 Mermaid 다이어그램을 Mac에서 받아 보고, iPad와 Apple P
 flowchart LR
     AI["AI · Codex · ChatGPT · Claude"] -->|"stdio MCP"| MCP["Review Canvas MCP"]
     MCP -->|"diagram-UUID.json"| Inbox["Mac 로컬 Inbox"]
-    Inbox -->|"AI Inbox에서 가져오기"| Mac["macOS 앱"]
+    Inbox -->|"열린 앱이 자동 가져오기"| Mac["macOS 앱"]
 
     subgraph Shared["공용 SwiftUI · ReviewCanvasCore"]
         Mac
@@ -18,17 +18,18 @@ flowchart LR
         Marks["? · ✎ · ! 검토 표시"]
     end
 
+    Mac -->|"Bonjour + TLS-PSK"| Pad
     Pad --> Pencil["PencilKit 필기"]
     Mac --> Marks
     Pad --> Marks
-    Mac --> MacData["Mac의 workspace.json"]
-    Pad --> PadData["iPad의 로컬 workspace.json"]
-
-    Mac -. "후속: CloudKit 또는 동기화 서버" .-> Sync["기기 간 동기화"]
-    Pad -.-> Sync
+    Pad -->|"검토·필기 feedback"| Mac
+    Mac --> Outbox["ReviewOutbox/Pending"]
+    Outbox -->|"MCP 호출 전 ingest"| MCPStore["store.json"]
 ```
 
-`send_diagram`으로 보낸 다이어그램은 같은 Mac의 로컬 Inbox에 대기합니다. 열린 macOS 앱이 약 1초 간격으로 새 항목을 감지하면 **AI Inbox** 버튼으로 가져올 수 있습니다. macOS와 iPadOS 앱은 코드와 데이터 형식을 공유하지만 각 기기의 작업공간은 현재 서로 독립적입니다.
+`send_diagram`으로 보낸 다이어그램은 같은 Mac의 로컬 Inbox에 대기합니다. 열린 macOS 앱이 약 1초 안에 자동으로 가져오며, 연결된 iPad에는 이벤트 기반 연결로 바로 전달합니다. iPad에서 만든 검토 표시와 필기는 400ms 동안 묶어 Mac으로 반환합니다. 앱이 만든 검토 표시는 다음 `list_review_marks`, `propose_revision`, `resolve_review_mark` 호출 전에 MCP 저장소로 흡수됩니다.
+
+기기 연결은 두 앱이 foreground이고 같은 Wi-Fi 또는 peer-to-peer 네트워크에 있을 때 동작합니다. Mac에 표시된 6자리 코드를 iPad에 입력하며, 전송 내용은 TLS-PSK로 암호화됩니다.
 
 ## 구현된 기능
 
@@ -40,8 +41,11 @@ flowchart LR
 - 실제 렌더된 SVG의 정규화 좌표로 검토 표시 위치를 보존하고, 지원되는 노드에서는 Mermaid source ID를 의미 정보로 함께 저장
 - `?` 설명 필요, `✎` 수정 필요, `!` 검토 필요 표시와 해결 상태 처리
 - iPadOS PencilKit 필기 오버레이와 도구 선택기
-- 다이어그램, 검토 표시, 필기 데이터를 기기별 `workspace.json`에 로컬 저장
-- macOS 앱의 로컬 MCP Inbox 가져오기와 처리한 envelope의 `Processed` 보관
+- Network.framework, Bonjour, 6자리 연결 코드를 이용한 Mac→iPad workspace 전달
+- iPad→Mac 검토 표시·필기 feedback, 최신 timestamp 병합과 메시지 ID 중복 제거
+- 연결이 끊겼을 때 로컬 `workspace.json`에 보존하고 재연결 후 다시 전송
+- macOS 앱의 로컬 MCP Inbox 자동 가져오기와 처리한 envelope의 `Processed` 보관
+- 원자적 `ReviewOutbox` 이벤트를 통한 앱→MCP 검토 표시 bridge
 - 네트워크 포트를 열지 않는 로컬 stdio MCP 서버와 4개 도구
 
 ## 검토 기호
@@ -53,7 +57,7 @@ flowchart LR
 | `!` | `verify` | 코드·문서 근거를 다시 확인해야 합니다. |
 | `✓` | `resolved` | 사용자가 검토를 해결됨으로 표시했습니다. |
 
-기호는 앱 안에서 생성·저장할 수 있습니다. 앱의 검토 표시를 MCP `store.json`으로 내보내 AI가 자동으로 읽는 왕복 연결은 아직 구현 전입니다.
+기호는 앱 안에서 생성·저장되며 Mac을 거쳐 MCP `store.json`에 들어갑니다. AI는 `list_review_marks`로 확인하고, 수정안을 만들거나 `resolve_review_mark`로 처리 상태를 갱신할 수 있습니다.
 
 ## 요구 사항
 
@@ -86,6 +90,16 @@ Xcode에서 다음 scheme을 선택합니다.
 - `ReviewCanvas-iPadOS`: iPad 시뮬레이터 또는 iPad 앱
 
 실제 iPad에 설치할 때는 Xcode에서 자신의 Apple Developer Team과 서명을 설정해야 합니다. 저장소에는 개발 팀을 지정하지 않습니다. CI와 시뮬레이터 빌드는 서명을 끄고, 아래 macOS 빌드 스크립트는 로컬 실행용 ad-hoc 서명을 사용합니다.
+
+### Mac과 iPad 연결
+
+1. 두 기기에서 Review Canvas를 열고 같은 Wi-Fi에 연결합니다.
+2. Mac 상단의 **iPad 대기 중**을 누르면 6자리 코드가 표시됩니다.
+3. iPad 상단의 **Mac 찾는 중**을 누르고 주변 Mac을 선택합니다.
+4. Mac의 6자리 코드를 입력하면 현재 다이어그램이 iPad에 표시됩니다.
+5. iPad의 `?`, `✎`, `!` 표시와 PencilKit 필기는 Mac으로 돌아옵니다.
+
+첫 연결 시 iPadOS와 macOS가 로컬 네트워크 접근 권한을 요청할 수 있습니다. 거부했다면 시스템 설정의 개인정보 보호 및 보안 → 로컬 네트워크에서 다시 허용합니다.
 
 ### macOS Release 앱 만들기
 
@@ -141,6 +155,9 @@ macOS에서 MCP와 앱이 공유하는 기본 Inbox는 다음 위치입니다.
 - `Processed/`: macOS 앱이 가져온 envelope의 보관 위치
 - `store.json`: MCP의 diagram, revision, review mark 상태
 - `store.json.lock`: 동시 수정을 막는 짧은 수명의 잠금 파일
+- `ReviewOutbox/Pending/review-<UUID>.json`: Mac 앱이 원자적으로 만든 검토 이벤트
+- `ReviewOutbox/Processed/`: MCP 저장소에 반영된 검토 이벤트
+- `ReviewOutbox/Rejected/`: 형식이 잘못되거나 저장 상태와 충돌한 격리 이벤트
 
 테스트나 별도 설치에서는 절대 경로만 허용하는 `REVIEW_CANVAS_DATA_DIR`로 Inbox를 바꿀 수 있습니다.
 
@@ -148,7 +165,7 @@ macOS에서 MCP와 앱이 공유하는 기본 Inbox는 다음 위치입니다.
 REVIEW_CANVAS_DATA_DIR=/absolute/path/to/inbox npm --prefix mcp start
 ```
 
-각 앱의 현재 다이어그램, 검토 표시, 필기는 해당 기기의 Application Support 아래 `Review Canvas/workspace.json`에 저장됩니다. 이 파일과 MCP `store.json`은 현재 자동으로 합쳐지지 않습니다.
+각 앱의 현재 다이어그램, 검토 표시, 필기는 해당 기기의 Application Support 아래 `Review Canvas/workspace.json`에 저장됩니다. 앱은 MCP `store.json`을 직접 수정하지 않고, Node MCP 서버만 기존 파일 잠금 안에서 Review Outbox를 반영합니다.
 
 ## 테스트
 
@@ -188,11 +205,11 @@ iPad UI 테스트도 `ReviewCanvas-iPadOS` scheme에 포함되어 있습니다. 
 
 ## 아직 구현되지 않은 범위
 
-- Mac과 iPad 사이의 CloudKit 또는 서버 기반 동기화
-- iPad 앱으로 MCP 다이어그램을 직접 푸시하는 전달 채널과 알림
-- 앱에서 만든 검토 표시를 MCP 저장소로 보내는 양방향 bridge
+- 앱이 종료되거나 background인 iPad를 깨우는 APNs·CloudKit 전달
+- 한 번 연결한 기기의 장기 신뢰 키 저장과 자동 재연결
 - AI 수정안의 앱 내 비교, 승인, 적용 화면
-- 기기 페어링, 인증, 원격 MCP
+- 여러 Mac·iPad 및 여러 문서를 동시에 관리하는 계정 기반 동기화
+- 원격 MCP
 - App Store 배포와 운영 정책
 
 ## 저장소 정책

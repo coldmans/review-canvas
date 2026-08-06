@@ -1,6 +1,12 @@
 import Foundation
 
 enum ReviewCanvasDateCoding {
+    static func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .custom(encodeISO8601Date)
+        return encoder
+    }
+
     static func makeDecoder() -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .custom(decodeISO8601Date)
@@ -27,5 +33,12 @@ enum ReviewCanvasDateCoding {
             in: container,
             debugDescription: "ISO 8601 날짜 형식이 아닙니다: \(value)"
         )
+    }
+
+    private static func encodeISO8601Date(_ date: Date, to encoder: Encoder) throws {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        var container = encoder.singleValueContainer()
+        try container.encode(formatter.string(from: date))
     }
 }

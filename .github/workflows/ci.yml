@@ -57,6 +57,14 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      - name: Validate local network declarations
+        run: |
+          plutil -lint App/macOS/Info.plist App/iPadOS/Info.plist
+          test "$(plutil -extract NSBonjourServices.0 raw App/macOS/Info.plist)" = "_reviewcanvas._tcp"
+          test "$(plutil -extract NSBonjourServices.0 raw App/iPadOS/Info.plist)" = "_reviewcanvas._tcp"
+          plutil -extract NSLocalNetworkUsageDescription raw App/macOS/Info.plist >/dev/null
+          plutil -extract NSLocalNetworkUsageDescription raw App/iPadOS/Info.plist >/dev/null
+
       - name: Test macOS app
         run: |
           xcodebuild \

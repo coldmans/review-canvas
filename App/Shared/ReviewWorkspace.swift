@@ -3,6 +3,12 @@ import CoreGraphics
 import Foundation
 import ReviewCanvasCore
 
+enum WorkspaceChangeKind: Equatable {
+    case document
+    case reviews
+    case drawing
+}
+
 @MainActor
 final class ReviewWorkspace: ObservableObject {
     @Published private(set) var document: DiagramDocument
@@ -10,11 +16,14 @@ final class ReviewWorkspace: ObservableObject {
     @Published var selectedMarkID: UUID?
     @Published var zoom = 1.0
     @Published var drawingData: Data
+    @Published private(set) var drawingUpdatedAt: Date
     @Published var isInkMode = false
     @Published var loadError: String?
     @Published var renderError: String?
     @Published private(set) var inboxCount = 0
     @Published private(set) var sourceURL: URL?
+
+    var localChangeHandler: ((WorkspaceChangeKind) -> Void)?
 
     private let persistence: WorkspacePersistence
     private let inbox: ReviewCanvasInbox
@@ -31,12 +40,15 @@ final class ReviewWorkspace: ObservableObject {
         case let .loaded(stored):
             document = stored.document
             drawingData = stored.drawingData
+            drawingUpdatedAt = stored.drawingUpdatedAt ?? stored.document.updatedAt
         case .missing:
             document = Self.makeSampleDocument()
             drawingData = Data()
+            drawingUpdatedAt = document.updatedAt
         case let .corrupt(error, backupURL):
             document = Self.makeSampleDocument()
             drawingData = Data()
+            drawingUpdatedAt = document.updatedAt
             if let backupURL {
                 loadError = "저장된 작업공간이 손상되어 \(backupURL.lastPathComponent)로 보관했습니다. \(error.localizedDescription)"
             } else {
@@ -160,16 +172,91 @@ final class ReviewWorkspace: ObservableObject {
     }
 
     func updateDrawingData(_ data: Data) {
+        guard drawingData != data else {
+            return
+        }
         drawingData = data
+        drawingUpdatedAt = Date()
         persist()
+        localChangeHandler?(.drawing)
+    }
+
+    func workspaceSyncSnapshot() -> WorkspaceSyncSnapshot {
+        WorkspaceSyncSnapshot(
+            document: document,
+            drawingData: drawingData,
+            drawingUpdatedAt: drawingUpdatedAt
+        )
+    }
+
+    func reviewFeedbackSnapshot() throws -> ReviewFeedbackSnapshot {
+        try ReviewFeedbackSnapshot(
+            diagramID: document.id,
+            revisionID: document.currentRevisionID,
+            marks: currentReviewMarks,
+            drawingData: drawingData,
+            drawingUpdatedAt: drawingUpdatedAt
+        )
+    }
+
+    func applyRemoteWorkspace(_ snapshot: WorkspaceSyncSnapshot) {
+        do {
+            let isDifferentDocument = document.id != snapshot.document.id
+            var incomingDocument = snapshot.document
+            if document.id == snapshot.document.id,
+               snapshot.document.revision(id: document.currentRevisionID) != nil {
+                let localFeedback = try reviewFeedbackSnapshot()
+                incomingDocument = try ReviewFeedbackMerger.merge(
+                    localFeedback,
+                    into: snapshot.document
+                )
+            }
+
+            document = incomingDocument
+            if isDifferentDocument || snapshot.drawingUpdatedAt >= drawingUpdatedAt {
+                drawingData = snapshot.drawingData
+                drawingUpdatedAt = snapshot.drawingUpdatedAt
+            }
+            selectedMarkID = nil
+            zoom = 1
+            canPersist = true
+            persist()
+        } catch {
+            loadError = error.localizedDescription
+        }
+    }
+
+    @discardableResult
+    func applyRemoteFeedback(_ feedback: ReviewFeedbackSnapshot) -> Bool {
+        do {
+            let merged = try ReviewFeedbackMerger.merge(feedback, into: document)
+            let documentChanged = merged != document
+            let drawingChanged = feedback.drawingUpdatedAt > drawingUpdatedAt
+            document = merged
+            if drawingChanged {
+                drawingData = feedback.drawingData
+                drawingUpdatedAt = feedback.drawingUpdatedAt
+            }
+            persist()
+            return documentChanged || drawingChanged
+        } catch {
+            loadError = error.localizedDescription
+            return false
+        }
     }
 
     func refreshInboxCount() {
         inboxCount = inbox.pendingCount
     }
 
-    func monitorInbox(pollIntervalNanoseconds: UInt64 = 1_000_000_000) async {
+    func monitorInbox(
+        pollIntervalNanoseconds: UInt64 = 1_000_000_000,
+        automaticallyImport: Bool = true
+    ) async {
         refreshInboxCount()
+        if automaticallyImport, inboxCount > 0 {
+            importNextInboxDiagram()
+        }
 
         while !Task.isCancelled {
             do {
@@ -178,15 +265,19 @@ final class ReviewWorkspace: ObservableObject {
                 return
             }
             refreshInboxCount()
+            if automaticallyImport, inboxCount > 0 {
+                importNextInboxDiagram()
+            }
         }
     }
 
     func importNextInboxDiagram() {
         do {
-            guard let item = try inbox.importNext() else {
+            guard let pending = try inbox.peekNext() else {
                 refreshInboxCount()
                 return
             }
+            let item = pending.diagram
             try replaceDocument(
                 title: item.title,
                 source: item.source,
@@ -194,6 +285,7 @@ final class ReviewWorkspace: ObservableObject {
                 revisionID: item.revisionID,
                 createdAt: item.createdAt
             )
+            try inbox.archive(pending)
             loadError = nil
             refreshInboxCount()
         } catch {
@@ -221,10 +313,12 @@ final class ReviewWorkspace: ObservableObject {
             createdAt: createdAt
         )
         drawingData = Data()
+        drawingUpdatedAt = createdAt
         selectedMarkID = nil
         zoom = 1
         canPersist = true
-        persist()
+        try persistOrThrow()
+        localChangeHandler?(.document)
     }
 
     private func apply(_ action: ReviewCanvasAction) throws {
@@ -232,13 +326,27 @@ final class ReviewWorkspace: ObservableObject {
         try ReviewCanvasReducer.reduce(&updatedDocument, action: action)
         document = updatedDocument
         persist()
+        localChangeHandler?(.reviews)
     }
 
     private func persist() {
+        do {
+            try persistOrThrow()
+        } catch {
+            loadError = "작업공간을 저장하지 못했습니다. \(error.localizedDescription)"
+            NSLog("[ReviewCanvas] 작업공간 저장 실패: %@", error.localizedDescription)
+        }
+    }
+
+    private func persistOrThrow() throws {
         guard !Self.isUITesting, canPersist else {
             return
         }
-        persistence.save(document: document, drawingData: drawingData)
+        try persistence.save(
+            document: document,
+            drawingData: drawingData,
+            drawingUpdatedAt: drawingUpdatedAt
+        )
     }
 
     private static var isUITesting: Bool {
@@ -275,6 +383,7 @@ final class ReviewWorkspace: ObservableObject {
 struct PersistedWorkspace: Codable {
     let document: DiagramDocument
     let drawingData: Data
+    let drawingUpdatedAt: Date?
 }
 
 enum WorkspaceLoadResult {
@@ -315,19 +424,20 @@ struct WorkspacePersistence {
         }
     }
 
-    func save(document: DiagramDocument, drawingData: Data) {
-        do {
-            let directory = fileURL.deletingLastPathComponent()
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+    func save(document: DiagramDocument, drawingData: Data, drawingUpdatedAt: Date) throws {
+        let directory = fileURL.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            encoder.dateEncodingStrategy = .iso8601
-            let data = try encoder.encode(PersistedWorkspace(document: document, drawingData: drawingData))
-            try data.write(to: fileURL, options: .atomic)
-        } catch {
-            NSLog("[ReviewCanvas] 작업공간 저장 실패: %@", error.localizedDescription)
-        }
+        let encoder = ReviewCanvasDateCoding.makeEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        let data = try encoder.encode(
+            PersistedWorkspace(
+                document: document,
+                drawingData: drawingData,
+                drawingUpdatedAt: drawingUpdatedAt
+            )
+        )
+        try data.write(to: fileURL, options: .atomic)
     }
 
     private func backupCorruptWorkspace() -> URL? {

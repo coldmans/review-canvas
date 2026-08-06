@@ -85,6 +85,7 @@ export class ReviewCanvasService {
   }
 
   async listReviewMarks(input = {}) {
+    await this.store.ingestReviewOutbox?.();
     const args = validateInputObject(input);
     const diagramId =
       args.diagramId === undefined ? undefined : validateId(args.diagramId, "diagramId");
@@ -117,6 +118,7 @@ export class ReviewCanvasService {
   }
 
   async proposeRevision(input) {
+    await this.store.ingestReviewOutbox?.();
     const args = validateInputObject(input);
     const diagramId = validateId(args.diagramId, "diagramId");
     const expectedRevisionId = validateId(args.expectedRevisionId, "expectedRevisionId");
@@ -176,6 +178,7 @@ export class ReviewCanvasService {
   }
 
   async resolveReviewMark(input) {
+    await this.store.ingestReviewOutbox?.();
     const args = validateInputObject(input);
     const diagramId = validateId(args.diagramId, "diagramId");
     const markId = validateId(args.markId, "markId");

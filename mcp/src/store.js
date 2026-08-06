@@ -11,6 +11,7 @@ import {
   MAX_MERMAID_BYTES,
   MAX_REVIEW_MARK_ANCHOR_BYTES,
   MAX_REVIEW_MARK_BODY_LENGTH,
+  MAX_REVIEW_EVENT_BYTES,
   MAX_REVIEW_MARK_SYMBOL_LENGTH,
   MAX_STORE_BYTES,
   REVIEW_MARK_STATUSES,
@@ -42,6 +43,8 @@ function assertIsoTimestamp(value, field) {
 
 const LOCK_ACQUIRE_TIMEOUT_MS = 5_000;
 const LOCK_STALE_AFTER_MS = 120_000;
+const REVIEW_EVENT_FILE_PATTERN =
+  /^review-([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.json$/iu;
 
 function assertString(
   value,
@@ -220,6 +223,200 @@ function assertReviewMark(mark, index) {
   if (mark.anchor !== undefined) {
     assertAnchor(mark.anchor, `reviewMarks[${index}].anchor`);
   }
+}
+
+function reviewEventFail(message) {
+  fail("REVIEW_EVENT_INVALID", message);
+}
+
+function assertReviewEventString(value, field, { nullable = false, maximumBytes } = {}) {
+  if (nullable && value === null) {
+    return;
+  }
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.includes("\0") ||
+    (maximumBytes !== undefined && Buffer.byteLength(value, "utf8") > maximumBytes)
+  ) {
+    reviewEventFail(`Review event field ${field} is invalid.`);
+  }
+}
+
+function assertReviewEventTimestamp(value, field) {
+  try {
+    if (isIsoTimestamp(value)) {
+      return;
+    }
+  } catch {
+    // Fall through to the stable review-event error.
+  }
+  reviewEventFail(`Review event field ${field} must be an ISO timestamp.`);
+}
+
+function assertReviewEventEnvelope(envelope) {
+  if (
+    !isPlainObject(envelope) ||
+    !hasExactKeys(envelope, [
+      "schemaVersion",
+      "exportId",
+      "exportedAt",
+      "diagram",
+      "revision",
+      "marks",
+    ]) ||
+    envelope.schemaVersion !== 1
+  ) {
+    reviewEventFail("Review event envelope is not supported.");
+  }
+  assertReviewEventString(envelope.exportId, "exportId");
+  if (!REVIEW_EVENT_FILE_PATTERN.test(`review-${envelope.exportId}.json`)) {
+    reviewEventFail("Review event exportId must be a UUID.");
+  }
+  assertReviewEventTimestamp(envelope.exportedAt, "exportedAt");
+
+  const { diagram, revision, marks } = envelope;
+  if (
+    !isPlainObject(diagram) ||
+    !hasExactKeys(diagram, [
+      "id",
+      "title",
+      "currentRevisionId",
+      "createdAt",
+      "updatedAt",
+    ])
+  ) {
+    reviewEventFail("Review event diagram is invalid.");
+  }
+  assertReviewEventString(diagram.id, "diagram.id");
+  assertReviewEventString(diagram.title, "diagram.title");
+  assertReviewEventString(diagram.currentRevisionId, "diagram.currentRevisionId");
+  assertReviewEventTimestamp(diagram.createdAt, "diagram.createdAt");
+  assertReviewEventTimestamp(diagram.updatedAt, "diagram.updatedAt");
+
+  if (
+    !isPlainObject(revision) ||
+    !hasExactKeys(revision, [
+      "id",
+      "parentRevisionId",
+      "sequence",
+      "status",
+      "source",
+      "createdAt",
+    ])
+  ) {
+    reviewEventFail("Review event revision is invalid.");
+  }
+  assertReviewEventString(revision.id, "revision.id");
+  assertReviewEventString(revision.parentRevisionId, "revision.parentRevisionId", {
+    nullable: true,
+  });
+  if (!Number.isSafeInteger(revision.sequence) || revision.sequence < 1) {
+    reviewEventFail("Review event revision sequence is invalid.");
+  }
+  if (!REVISION_STATUSES.includes(revision.status)) {
+    reviewEventFail("Review event revision status is invalid.");
+  }
+  assertReviewEventString(revision.source, "revision.source", {
+    maximumBytes: MAX_MERMAID_BYTES,
+  });
+  assertReviewEventTimestamp(revision.createdAt, "revision.createdAt");
+  if (diagram.currentRevisionId !== revision.id) {
+    reviewEventFail("Review event diagram and revision do not match.");
+  }
+
+  if (!Array.isArray(marks) || marks.length > MAX_COLLECTION_ITEMS) {
+    reviewEventFail("Review event marks must be a bounded array.");
+  }
+  const markIDs = new Set();
+  for (const [index, mark] of marks.entries()) {
+    const expectedKeys = [
+      "id",
+      "diagramId",
+      "revisionId",
+      "type",
+      "symbol",
+      "body",
+      "status",
+      "createdAt",
+      "updatedAt",
+      "resolvedAt",
+      ...(mark?.anchor === undefined ? [] : ["anchor"]),
+    ];
+    if (!isPlainObject(mark) || !hasExactKeys(mark, expectedKeys)) {
+      reviewEventFail(`Review event mark ${index} has invalid keys.`);
+    }
+    try {
+      assertReviewMark(mark, index);
+    } catch (error) {
+      if (error instanceof ReviewCanvasError) {
+        reviewEventFail(`Review event mark ${index} is invalid.`);
+      }
+      throw error;
+    }
+    if (mark.diagramId !== diagram.id || mark.revisionId !== revision.id) {
+      reviewEventFail(`Review event mark ${index} references another document.`);
+    }
+    if (markIDs.has(mark.id)) {
+      reviewEventFail(`Review event mark ${index} is duplicated.`);
+    }
+    markIDs.add(mark.id);
+  }
+
+  return envelope;
+}
+
+function applyReviewEvent(state, envelope) {
+  const { diagram: incomingDiagram, revision: incomingRevision } = envelope;
+  let diagram = state.diagrams.find((candidate) => candidate.id === incomingDiagram.id);
+  if (!diagram) {
+    diagram = {
+      id: incomingDiagram.id,
+      title: incomingDiagram.title,
+      targetDevice: "any",
+      status: "reviewing",
+      currentRevisionId: incomingRevision.id,
+      headRevisionId: incomingRevision.id,
+      createdAt: incomingDiagram.createdAt,
+      updatedAt: incomingDiagram.updatedAt,
+    };
+    state.diagrams.push(diagram);
+  }
+
+  let revision = state.revisions.find((candidate) => candidate.id === incomingRevision.id);
+  if (!revision) {
+    revision = {
+      id: incomingRevision.id,
+      diagramId: incomingDiagram.id,
+      parentRevisionId: incomingRevision.parentRevisionId,
+      sequence: incomingRevision.sequence,
+      source: incomingRevision.source,
+      summary: null,
+      status: incomingRevision.status,
+      createdAt: incomingRevision.createdAt,
+    };
+    state.revisions.push(revision);
+  } else if (
+    revision.diagramId !== incomingDiagram.id ||
+    revision.source !== incomingRevision.source
+  ) {
+    fail("REVIEW_EVENT_CONFLICT", "Review event revision conflicts with MCP storage.");
+  }
+
+  for (const mark of envelope.marks) {
+    const existing = state.reviewMarks.find((candidate) => candidate.id === mark.id);
+    if (!existing) {
+      state.reviewMarks.push(mark);
+      continue;
+    }
+    if (existing.diagramId !== mark.diagramId || existing.revisionId !== mark.revisionId) {
+      fail("REVIEW_EVENT_CONFLICT", "Review event mark conflicts with MCP storage.");
+    }
+    if (mark.updatedAt > existing.updatedAt) {
+      Object.assign(existing, mark);
+    }
+  }
+  diagram.updatedAt = [diagram.updatedAt, incomingDiagram.updatedAt, envelope.exportedAt].sort().at(-1);
 }
 
 function validateStoreState(state) {
@@ -416,6 +613,75 @@ export class JsonStore {
     });
   }
 
+  async ingestReviewOutbox() {
+    const rootDirectory = path.dirname(this.path);
+    const pendingDirectory = path.join(rootDirectory, "ReviewOutbox", "Pending");
+    const entries = await readdir(pendingDirectory, { withFileTypes: true }).catch((error) => {
+      if (error?.code === "ENOENT") {
+        return [];
+      }
+      throw this.#storeIoError("scan the review outbox in", error);
+    });
+    let imported = 0;
+    let rejected = 0;
+
+    for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+      if (!entry.isFile() || !REVIEW_EVENT_FILE_PATTERN.test(entry.name)) {
+        continue;
+      }
+
+      const pendingPath = path.join(pendingDirectory, entry.name);
+      try {
+        const metadata = await lstat(pendingPath);
+        if (!metadata.isFile() || metadata.isSymbolicLink() || metadata.size > MAX_REVIEW_EVENT_BYTES) {
+          reviewEventFail("Review event file is unsafe or too large.");
+        }
+
+        const handle = await open(pendingPath, fileConstants.O_RDONLY | fileConstants.O_NOFOLLOW);
+        let contents;
+        try {
+          contents = await handle.readFile({ encoding: "utf8" });
+        } finally {
+          await handle.close();
+        }
+
+        let envelope;
+        try {
+          envelope = JSON.parse(contents);
+        } catch (error) {
+          throw new ReviewCanvasError(
+            "REVIEW_EVENT_INVALID",
+            "Review event contains invalid JSON.",
+            undefined,
+            { cause: error },
+          );
+        }
+        assertReviewEventEnvelope(envelope);
+        const match = REVIEW_EVENT_FILE_PATTERN.exec(entry.name);
+        if (match?.[1].toLowerCase() !== envelope.exportId.toLowerCase()) {
+          reviewEventFail("Review event filename and exportId do not match.");
+        }
+
+        await this.transaction((state) => applyReviewEvent(state, envelope));
+        await this.#archiveReviewEvent(pendingPath, "Processed");
+        imported += 1;
+      } catch (error) {
+        if (
+          error instanceof SyntaxError ||
+          (error instanceof ReviewCanvasError &&
+            ["REVIEW_EVENT_INVALID", "REVIEW_EVENT_CONFLICT"].includes(error.code))
+        ) {
+          await this.#archiveReviewEvent(pendingPath, "Rejected");
+          rejected += 1;
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    return { imported, rejected };
+  }
+
   recoverInterruptedQueues() {
     return this.#runExclusive(async () => {
       const directory = path.dirname(this.path);
@@ -514,6 +780,37 @@ export class JsonStore {
         throw error;
       }
       throw this.#storeIoError("prepare the inbox envelope in", error);
+    }
+  }
+
+  async #archiveReviewEvent(sourcePath, folderName) {
+    const destinationDirectory = path.join(
+      path.dirname(this.path),
+      "ReviewOutbox",
+      folderName,
+    );
+    await mkdir(destinationDirectory, { recursive: true, mode: 0o700 });
+    let destinationPath = path.join(destinationDirectory, path.basename(sourcePath));
+    const exists = await lstat(destinationPath)
+      .then(() => true)
+      .catch((error) => {
+        if (error?.code === "ENOENT") {
+          return false;
+        }
+        throw error;
+      });
+    if (exists) {
+      destinationPath = path.join(
+        destinationDirectory,
+        `${path.basename(sourcePath, ".json")}-${randomUUID()}.json`,
+      );
+    }
+    try {
+      await rename(sourcePath, destinationPath);
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        throw this.#storeIoError("archive a review event in", error);
+      }
     }
   }
 

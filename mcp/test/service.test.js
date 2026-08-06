@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { describe, it } from "node:test";
 
@@ -332,6 +332,112 @@ describe("ReviewCanvasService revisions", () => {
 });
 
 describe("ReviewCanvasService review marks", () => {
+  it("ingests app-authored review events exactly once before listing marks", async () => {
+    await withService(async ({ service, store, directory }) => {
+      await service.sendDiagram({ title: "One", mermaid: "flowchart LR\n A --> B" });
+      const exportId = "00000000-0000-4000-8000-000000000061";
+      const pendingDirectory = path.join(directory, "ReviewOutbox", "Pending");
+      await mkdir(pendingDirectory, { recursive: true });
+      await writeFile(
+        path.join(pendingDirectory, `review-${exportId}.json`),
+        `${JSON.stringify(reviewExportEnvelope({ exportId }), null, 2)}\n`,
+        "utf8",
+      );
+
+      const first = await service.listReviewMarks({ diagramId: DIAGRAM_ID });
+      const second = await service.listReviewMarks({ diagramId: DIAGRAM_ID });
+
+      assert.equal(first.count, 1);
+      assert.equal(first.marks[0].id, MARK_ID);
+      assert.deepEqual(second, first);
+      const state = await store.read();
+      assert.equal(state.reviewMarks.length, 1);
+      assert.equal(state.reviewMarks[0].anchor.nodeID, "B");
+      assert.equal(
+        JSON.parse(
+          await readFile(
+            path.join(directory, "ReviewOutbox", "Processed", `review-${exportId}.json`),
+            "utf8",
+          ),
+        ).exportId,
+        exportId,
+      );
+    });
+  });
+
+  it("does not let a replayed older app event regress a newer mark", async () => {
+    await withService(async ({ service, store, directory }) => {
+      await service.sendDiagram({ title: "One", mermaid: "flowchart LR\n A --> B" });
+      const pendingDirectory = path.join(directory, "ReviewOutbox", "Pending");
+      await mkdir(pendingDirectory, { recursive: true });
+      await writeFile(
+        path.join(
+          pendingDirectory,
+          "review-00000000-0000-4000-8000-000000000062.json",
+        ),
+        `${JSON.stringify(
+          reviewExportEnvelope({
+            exportId: "00000000-0000-4000-8000-000000000062",
+          }),
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
+      await service.listReviewMarks({ diagramId: DIAGRAM_ID });
+      await store.transaction((state) => {
+        state.reviewMarks[0].status = "resolved";
+        state.reviewMarks[0].updatedAt = LATER;
+        state.reviewMarks[0].resolvedAt = LATER;
+      });
+
+      await writeFile(
+        path.join(
+          pendingDirectory,
+          "review-00000000-0000-4000-8000-000000000063.json",
+        ),
+        `${JSON.stringify(
+          reviewExportEnvelope({
+            exportId: "00000000-0000-4000-8000-000000000063",
+          }),
+          null,
+          2,
+        )}\n`,
+        "utf8",
+      );
+
+      const result = await service.listReviewMarks({ diagramId: DIAGRAM_ID });
+
+      assert.equal(result.count, 1);
+      assert.equal(result.marks[0].status, "resolved");
+      assert.equal(result.marks[0].updatedAt, LATER);
+    });
+  });
+
+  it("quarantines malformed review events without blocking valid MCP reads", async () => {
+    await withService(async ({ service, directory }) => {
+      const exportId = "00000000-0000-4000-8000-000000000064";
+      const pendingDirectory = path.join(directory, "ReviewOutbox", "Pending");
+      await mkdir(pendingDirectory, { recursive: true });
+      await writeFile(
+        path.join(pendingDirectory, `review-${exportId}.json`),
+        "not-json",
+        "utf8",
+      );
+
+      const result = await service.listReviewMarks();
+
+      assert.deepEqual(result, { count: 0, marks: [] });
+      assert.equal(
+        await readFile(
+          path.join(directory, "ReviewOutbox", "Rejected", `review-${exportId}.json`),
+          "utf8",
+        ),
+        "not-json",
+      );
+    });
+  });
+
   it("lists marks using diagram, status, and type filters", async () => {
     await withService(async ({ service, store }) => {
       await service.sendDiagram({ title: "One", mermaid: "flowchart LR\n A --> B" });
@@ -497,3 +603,45 @@ describe("ReviewCanvasService review marks", () => {
     });
   });
 });
+
+function reviewExportEnvelope({ exportId }) {
+  return {
+    schemaVersion: 1,
+    exportId,
+    exportedAt: NOW,
+    diagram: {
+      id: DIAGRAM_ID,
+      title: "One",
+      currentRevisionId: INITIAL_REVISION_ID,
+      createdAt: NOW,
+      updatedAt: NOW,
+    },
+    revision: {
+      id: INITIAL_REVISION_ID,
+      parentRevisionId: null,
+      sequence: 1,
+      status: "current",
+      source: "flowchart LR\n A --> B",
+      createdAt: NOW,
+    },
+    marks: [
+      {
+        id: MARK_ID,
+        diagramId: DIAGRAM_ID,
+        revisionId: INITIAL_REVISION_ID,
+        type: "verify",
+        symbol: "!",
+        body: "Check node B",
+        status: "open",
+        anchor: {
+          kind: "node",
+          nodeID: "B",
+          position: { x: 0.8, y: 0.5 },
+        },
+        createdAt: NOW,
+        updatedAt: NOW,
+        resolvedAt: null,
+      },
+    ],
+  };
+}

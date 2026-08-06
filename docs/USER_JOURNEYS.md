@@ -2,7 +2,7 @@
 
 ## 1. 다이어그램 확인 — 구현됨
 
-Mac 또는 iPad 사용자는 Mermaid 파일을 열어 구조를 확인할 수 있다. Mac에서는 로컬 MCP가 보낸 다이어그램도 AI Inbox로 가져올 수 있으며, iPad로 직접 보내는 채널은 다음 단계다.
+Mac 또는 iPad 사용자는 Mermaid 파일을 열어 구조를 확인할 수 있다. Mac에서는 로컬 MCP가 보낸 다이어그램을 자동으로 가져오고 연결된 iPad로 전달한다.
 
 완료 조건:
 
@@ -21,9 +21,9 @@ iPad 사용자는 Apple Pencil 또는 터치로 다이어그램을 따라 그리
 - 자유 필기는 PencilKit 데이터로 문서에 보존된다.
 - 해결된 항목은 삭제하지 않고 `resolved` 상태로 전환된다.
 
-현재 검토 표시와 필기는 해당 iPad의 작업공간에 저장된다. Mac과 iPad 사이 자동 동기화는 다음 단계다.
+검토 표시와 필기는 iPad 작업공간에 먼저 저장되고, 연결 중이면 400ms 단위로 Mac에 전달된다. 연결이 끊긴 상태의 변경은 다음 연결에서 다시 보낸다.
 
-## 3. Mac에서 검토 처리 — 다음 단계
+## 3. Mac에서 검토 처리 — 구현됨
 
 Mac 사용자는 iPad에서 생성한 검토 항목을 목록으로 보고 설명하거나 수정안을 준비할 수 있다.
 
@@ -33,11 +33,11 @@ Mac 사용자는 iPad에서 생성한 검토 항목을 목록으로 보고 설�
 - 검토 항목을 선택하면 다이어그램의 위치가 강조된다.
 - Mermaid 변경은 원본을 덮어쓰지 않고 새 revision으로 생성된다.
 
-이 여정은 CloudKit 또는 별도 동기화 계층을 붙인 뒤 활성화한다. 현재 Mac 앱에서는 같은 검토 목록과 해결 처리를 사용할 수 있지만, iPad의 작업공간이 Mac으로 자동 전송되지는 않는다.
+Mac은 iPad feedback을 timestamp 기준으로 병합하고 로컬 작업공간에 보존한다. 검토 목록 변경은 원자적 Review Outbox 이벤트로 내보내며, MCP가 다음 도구 호출 전에 자신의 잠금·트랜잭션 안에서 흡수한다.
 
 ## 4. AI에서 Review Canvas로 전송 — 로컬 Mac Inbox 구현됨
 
-AI 에이전트는 로컬 MCP의 `send_diagram` 도구를 호출해 Mac의 Review Canvas inbox에 다이어그램을 넣을 수 있다. 실제 iPad로 직접 전달하는 기기 동기화는 다음 단계다.
+AI 에이전트는 로컬 MCP의 `send_diagram` 도구를 호출해 Mac의 Review Canvas inbox에 다이어그램을 넣을 수 있다. 열린 Mac 앱은 이를 자동으로 가져와 연결된 iPad로 전달한다.
 
 완료 조건:
 
@@ -46,3 +46,15 @@ AI 에이전트는 로컬 MCP의 `send_diagram` 도구를 호출해 Mac의 Revie
 - 1 MiB를 넘는 입력과 revision 충돌을 거부한다.
 - 앱이 inbox 문서를 가져와 렌더링할 수 있다.
 - 앱이 열린 뒤 도착한 inbox 문서도 자동으로 감지한다.
+
+## 5. 기기 페어링과 재연결 — foreground MVP 구현됨
+
+Mac은 Bonjour로 자신을 광고하고 iPad는 주변 Mac을 검색한다. 사용자가 Mac의 6자리 코드를 iPad에 입력하면 TLS-PSK 연결이 성립한다.
+
+완료 조건:
+
+- 사용자가 명시적으로 Mac을 선택해야 한다.
+- 잘못된 연결 코드는 TLS handshake 단계에서 거부한다.
+- 같은 메시지 ID를 다시 받아도 중복 적용하지 않는다.
+- 유휴 상태에 heartbeat나 고빈도 네트워크 polling을 두지 않는다.
+- iPad가 background이거나 종료된 동안 즉시 전달하는 기능은 이 단계에 포함하지 않는다.

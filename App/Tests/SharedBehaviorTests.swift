@@ -92,6 +92,7 @@ final class SharedBehaviorTests: XCTestCase {
         XCTAssertEqual(imported.revisionID.uuidString, "00000000-0000-0000-0000-000000000011")
         XCTAssertEqual(imported.title, "Deployment")
         XCTAssertEqual(imported.source, "flowchart LR\nA --> B")
+        XCTAssertEqual(imported.targetDevice, .any)
         XCTAssertEqual(imported.createdAt.timeIntervalSince1970, 1_785_888_000.123, accuracy: 0.000_1)
         XCTAssertEqual(inbox.pendingCount, 0)
         XCTAssertTrue(
@@ -149,7 +150,10 @@ final class SharedBehaviorTests: XCTestCase {
         XCTAssertEqual(workspace.inboxCount, 0)
 
         let monitor = Task {
-            await workspace.monitorInbox(pollIntervalNanoseconds: 10_000_000)
+            await workspace.monitorInbox(
+                pollIntervalNanoseconds: 10_000_000,
+                automaticallyImport: false
+            )
         }
         defer { monitor.cancel() }
 
@@ -165,6 +169,39 @@ final class SharedBehaviorTests: XCTestCase {
         }
 
         XCTAssertEqual(workspace.inboxCount, 1)
+    }
+
+    @MainActor
+    func testWorkspaceAutomaticallyImportsInboxAndArchivesOnlyAfterPersistence() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ReviewCanvasInboxAutoImportTests-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let inboxDirectory = directory.appendingPathComponent("Inbox", isDirectory: true)
+        try FileManager.default.createDirectory(at: inboxDirectory, withIntermediateDirectories: true)
+        try writeInboxEnvelope(to: inboxDirectory, createdAt: "2026-08-05T00:00:00.123Z")
+        let workspaceURL = directory.appendingPathComponent("workspace.json")
+        let workspace = ReviewWorkspace(
+            persistence: WorkspacePersistence(fileURL: workspaceURL),
+            inbox: ReviewCanvasInbox(directoryURL: inboxDirectory)
+        )
+
+        let monitor = Task {
+            await workspace.monitorInbox(pollIntervalNanoseconds: 10_000_000)
+        }
+        defer { monitor.cancel() }
+        for _ in 0..<50 where workspace.document.id.uuidString != "00000000-0000-0000-0000-000000000001" {
+            try await Task<Never, Never>.sleep(nanoseconds: 10_000_000)
+        }
+
+        XCTAssertEqual(workspace.document.id.uuidString, "00000000-0000-0000-0000-000000000001")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspaceURL.path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(
+                atPath: inboxDirectory.appendingPathComponent(
+                    "Processed/diagram-00000000-0000-0000-0000-000000000001.json"
+                ).path
+            )
+        )
     }
 
     func testInboxIgnoresSymlinksNonUUIDNamesAndOversizedFiles() throws {

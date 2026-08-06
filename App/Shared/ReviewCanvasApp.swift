@@ -3,10 +3,11 @@ import SwiftUI
 @main
 struct ReviewCanvasApp: App {
     @StateObject private var workspace = ReviewWorkspace()
+    @StateObject private var syncController = ReviewCanvasSyncController()
 
     var body: some Scene {
         WindowGroup("Review Canvas") {
-            ReviewCanvasRootView(workspace: workspace)
+            ReviewCanvasRootView(workspace: workspace, syncController: syncController)
                 .onOpenURL { workspace.load($0) }
                 #if os(macOS)
                 .frame(minWidth: 900, minHeight: 620)

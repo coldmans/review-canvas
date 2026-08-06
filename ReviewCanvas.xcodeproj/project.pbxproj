@@ -14,9 +14,11 @@
 		2141C406DE00601466FF4234 /* MacPlatformSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F83D0DB5032F0330EF3C02A /* MacPlatformSupport.swift */; };
 		2D7908BCAB5C7DDAB3899255 /* ReviewCanvasDateCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */; };
 		2E36BD68D30463C89BCC1398 /* MermaidWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73B1506B5D91A525C638760 /* MermaidWebView.swift */; };
+		3CD1D33E9DA9E2BD761410E2 /* ReviewCanvasWireCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = A608CF2E28E4F1C3AD4272CC /* ReviewCanvasWireCodec.swift */; };
 		415BED4B0C0612D2883CB496 /* MermaidWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73B1506B5D91A525C638760 /* MermaidWebView.swift */; };
 		49D48BAE1BC9C1EF80F2DD87 /* viewer-geometry.js in Resources */ = {isa = PBXBuildFile; fileRef = 8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */; };
 		4A8D049F5F960E54EFB42BAC /* ReviewCanvasInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */; };
+		4B788474BB50F17330CA88CD /* DeviceSyncBehaviorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F670D9CAD28901BA935D82B9 /* DeviceSyncBehaviorTests.swift */; };
 		5969DDE80A6A73079A39CD42 /* DiagramViewportGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */; };
 		605C36248EFFBC891BE151B6 /* ReviewCanvasDateCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */; };
 		61B6570A55E5637F20E959EE /* ReviewWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */; };
@@ -26,16 +28,23 @@
 		7769B9531DA3BF16B44A7274 /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 857C1C3BBC4D46BE73D3042A /* LICENSE */; };
 		77B31B99061024A51475BABF /* LICENSE in Resources */ = {isa = PBXBuildFile; fileRef = 857C1C3BBC4D46BE73D3042A /* LICENSE */; };
 		7834A0D420AF07DEE208B0C3 /* ReviewWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */; };
+		7BE88FFA68A47E6990C97446 /* ReviewCanvasSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A843DD634CAABD3B2E87FE /* ReviewCanvasSyncController.swift */; };
 		7E087B606449BC7A378D64E5 /* ReviewCanvasRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */; };
 		950D085DF5F82596A0C3C6E4 /* MermaidSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A43B6EDF6AD838043CF3E2C /* MermaidSource.swift */; };
 		9C1EDAB1BC899D5322A41AE7 /* viewer-geometry.js in Resources */ = {isa = PBXBuildFile; fileRef = 8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */; };
 		9D5A8D8A0E97373B7471567B /* viewer.html in Resources */ = {isa = PBXBuildFile; fileRef = D946C3BEFC3EE67763ECF5F3 /* viewer.html */; };
 		A414B031D39081FF7FAC7A2C /* ReviewCanvasApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */; };
 		B20ED2A8B372D8F489962AE8 /* DiagramViewportGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */; };
+		B2F7F56FD61A242F19ECF7AA /* ReviewCanvasSyncController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22A843DD634CAABD3B2E87FE /* ReviewCanvasSyncController.swift */; };
 		B692566D410C2576ACC3E274 /* PencilCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 926049D8CCBEBCA2278CCA32 /* PencilCanvasView.swift */; };
+		BB5F577DC29CAAE5C9E7F740 /* MCPReviewOutbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3787E0DC9B5744C93C7D2981 /* MCPReviewOutbox.swift */; };
+		C96E69DAD5A925686F782432 /* LocalNetworkPeerTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502046AFD783465CBFE8512B /* LocalNetworkPeerTransport.swift */; };
+		CA0E768F06D9AB4BE0BF1A13 /* LocalNetworkPeerTransport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 502046AFD783465CBFE8512B /* LocalNetworkPeerTransport.swift */; };
 		CE8B1DAD06901CA124B47507 /* ReviewCanvasInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */; };
 		D4AAF03EF86839999BCB90DF /* viewer.html in Resources */ = {isa = PBXBuildFile; fileRef = D946C3BEFC3EE67763ECF5F3 /* viewer.html */; };
+		D4CC7558D141C2852E49433E /* MCPReviewOutbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3787E0DC9B5744C93C7D2981 /* MCPReviewOutbox.swift */; };
 		E1EFEF24C3DC021C7430B3A4 /* ReviewCanvasCore in Frameworks */ = {isa = PBXBuildFile; productRef = 03674C18960BFF179B51599E /* ReviewCanvasCore */; };
+		EE34CB4CB0453D82FD67FBC3 /* ReviewCanvasWireCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = A608CF2E28E4F1C3AD4272CC /* ReviewCanvasWireCodec.swift */; };
 		F8782EC4F2E8F5CE8FFC2434 /* ReviewCanvasApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */; };
 /* End PBXBuildFile section */
 
@@ -58,19 +67,25 @@
 
 /* Begin PBXFileReference section */
 		106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasApp.swift; sourceTree = "<group>"; };
+		15386A7B379017FEB5BDA5C5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		1D1AA806D2DC334F0D54672E /* ReviewCanvasTests-macOS.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "ReviewCanvasTests-macOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		20F4FFF45F5F3B14B20EAB6C /* ReviewCanvas-iPadOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = "ReviewCanvas-iPadOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		22A843DD634CAABD3B2E87FE /* ReviewCanvasSyncController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasSyncController.swift; sourceTree = "<group>"; };
 		2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagramViewportGeometry.swift; sourceTree = "<group>"; };
+		3787E0DC9B5744C93C7D2981 /* MCPReviewOutbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MCPReviewOutbox.swift; sourceTree = "<group>"; };
 		4A43B6EDF6AD838043CF3E2C /* MermaidSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MermaidSource.swift; sourceTree = "<group>"; };
+		502046AFD783465CBFE8512B /* LocalNetworkPeerTransport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LocalNetworkPeerTransport.swift; sourceTree = "<group>"; };
 		57B43B934F58E30ED38DCDD1 /* ReviewCanvasUITests-iPadOS.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "ReviewCanvasUITests-iPadOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasInbox.swift; sourceTree = "<group>"; };
 		6FFCD5F590250494E53790B1 /* ReviewCanvasUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasUITests.swift; sourceTree = "<group>"; };
 		8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "viewer-geometry.js"; sourceTree = "<group>"; };
 		857C1C3BBC4D46BE73D3042A /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
+		88A6BFE2CD75E90CC6F2777A /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewWorkspace.swift; sourceTree = "<group>"; };
 		926049D8CCBEBCA2278CCA32 /* PencilCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PencilCanvasView.swift; sourceTree = "<group>"; };
 		9F0B75FA84D0744484100914 /* SharedBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SharedBehaviorTests.swift; sourceTree = "<group>"; };
 		9F83D0DB5032F0330EF3C02A /* MacPlatformSupport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacPlatformSupport.swift; sourceTree = "<group>"; };
+		A608CF2E28E4F1C3AD4272CC /* ReviewCanvasWireCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasWireCodec.swift; sourceTree = "<group>"; };
 		AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasRootView.swift; sourceTree = "<group>"; };
 		AFB8E2E1ED96D4BF42FBA9A5 /* mermaid.min.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = mermaid.min.js; sourceTree = "<group>"; };
 		C7879B516FAA04556C01A67A /* ReviewCanvasCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ReviewCanvasCore; path = Packages/ReviewCanvasCore; sourceTree = SOURCE_ROOT; };
@@ -78,6 +93,7 @@
 		D946C3BEFC3EE67763ECF5F3 /* viewer.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = viewer.html; sourceTree = "<group>"; };
 		DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasDateCoding.swift; sourceTree = "<group>"; };
 		E3128463AF3D2A3DBC4F7989 /* ReviewCanvas-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ReviewCanvas-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		F670D9CAD28901BA935D82B9 /* DeviceSyncBehaviorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceSyncBehaviorTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -112,6 +128,7 @@
 		13124C7581E61107D76AE672 /* Tests */ = {
 			isa = PBXGroup;
 			children = (
+				F670D9CAD28901BA935D82B9 /* DeviceSyncBehaviorTests.swift */,
 				9F0B75FA84D0744484100914 /* SharedBehaviorTests.swift */,
 			);
 			path = Tests;
@@ -131,6 +148,7 @@
 		286F1B7C713EFCAE63F3E83B /* iPadOS */ = {
 			isa = PBXGroup;
 			children = (
+				15386A7B379017FEB5BDA5C5 /* Info.plist */,
 				926049D8CCBEBCA2278CCA32 /* PencilCanvasView.swift */,
 			);
 			path = iPadOS;
@@ -148,12 +166,16 @@
 			isa = PBXGroup;
 			children = (
 				2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */,
+				502046AFD783465CBFE8512B /* LocalNetworkPeerTransport.swift */,
+				3787E0DC9B5744C93C7D2981 /* MCPReviewOutbox.swift */,
 				4A43B6EDF6AD838043CF3E2C /* MermaidSource.swift */,
 				D73B1506B5D91A525C638760 /* MermaidWebView.swift */,
 				106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */,
 				DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */,
 				6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */,
 				AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */,
+				22A843DD634CAABD3B2E87FE /* ReviewCanvasSyncController.swift */,
+				A608CF2E28E4F1C3AD4272CC /* ReviewCanvasWireCodec.swift */,
 				915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */,
 			);
 			path = Shared;
@@ -209,6 +231,7 @@
 		C899E56DB6B60ABDCB15DB25 /* macOS */ = {
 			isa = PBXGroup;
 			children = (
+				88A6BFE2CD75E90CC6F2777A /* Info.plist */,
 				9F83D0DB5032F0330EF3C02A /* MacPlatformSupport.swift */,
 			);
 			path = macOS;
@@ -390,6 +413,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B20ED2A8B372D8F489962AE8 /* DiagramViewportGeometry.swift in Sources */,
+				C96E69DAD5A925686F782432 /* LocalNetworkPeerTransport.swift in Sources */,
+				D4CC7558D141C2852E49433E /* MCPReviewOutbox.swift in Sources */,
 				950D085DF5F82596A0C3C6E4 /* MermaidSource.swift in Sources */,
 				2E36BD68D30463C89BCC1398 /* MermaidWebView.swift in Sources */,
 				B692566D410C2576ACC3E274 /* PencilCanvasView.swift in Sources */,
@@ -397,6 +422,8 @@
 				605C36248EFFBC891BE151B6 /* ReviewCanvasDateCoding.swift in Sources */,
 				4A8D049F5F960E54EFB42BAC /* ReviewCanvasInbox.swift in Sources */,
 				7E087B606449BC7A378D64E5 /* ReviewCanvasRootView.swift in Sources */,
+				7BE88FFA68A47E6990C97446 /* ReviewCanvasSyncController.swift in Sources */,
+				EE34CB4CB0453D82FD67FBC3 /* ReviewCanvasWireCodec.swift in Sources */,
 				61B6570A55E5637F20E959EE /* ReviewWorkspace.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -405,6 +432,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4B788474BB50F17330CA88CD /* DeviceSyncBehaviorTests.swift in Sources */,
 				00673D5AEC013EB4C3E84FAD /* SharedBehaviorTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -414,6 +442,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				5969DDE80A6A73079A39CD42 /* DiagramViewportGeometry.swift in Sources */,
+				CA0E768F06D9AB4BE0BF1A13 /* LocalNetworkPeerTransport.swift in Sources */,
+				BB5F577DC29CAAE5C9E7F740 /* MCPReviewOutbox.swift in Sources */,
 				2141C406DE00601466FF4234 /* MacPlatformSupport.swift in Sources */,
 				73FC32311D179817D3B1F97A /* MermaidSource.swift in Sources */,
 				415BED4B0C0612D2883CB496 /* MermaidWebView.swift in Sources */,
@@ -421,6 +451,8 @@
 				2D7908BCAB5C7DDAB3899255 /* ReviewCanvasDateCoding.swift in Sources */,
 				CE8B1DAD06901CA124B47507 /* ReviewCanvasInbox.swift in Sources */,
 				1D8404AFB9BBC269A8E581DC /* ReviewCanvasRootView.swift in Sources */,
+				B2F7F56FD61A242F19ECF7AA /* ReviewCanvasSyncController.swift in Sources */,
+				3CD1D33E9DA9E2BD761410E2 /* ReviewCanvasWireCodec.swift in Sources */,
 				7834A0D420AF07DEE208B0C3 /* ReviewWorkspace.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -464,10 +496,8 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Review Canvas";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_LSMinimumSystemVersion = 14.0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -543,11 +573,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Review Canvas";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/iPadOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -585,10 +612,8 @@
 				CODE_SIGN_IDENTITY = "-";
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Review Canvas";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_LSMinimumSystemVersion = 14.0;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/macOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -607,11 +632,8 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Review Canvas";
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = App/iPadOS/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

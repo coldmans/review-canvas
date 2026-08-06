@@ -5,6 +5,7 @@ export const MAX_COLLECTION_ITEMS = 10_000;
 export const MAX_REVIEW_MARK_BODY_LENGTH = 16_000;
 export const MAX_REVIEW_MARK_SYMBOL_LENGTH = 16;
 export const MAX_REVIEW_MARK_ANCHOR_BYTES = 4_096;
+export const MAX_REVIEW_EVENT_BYTES = 4 * 1024 * 1024;
 export const MAX_TITLE_LENGTH = 200;
 export const MAX_SUMMARY_LENGTH = 2_000;
 

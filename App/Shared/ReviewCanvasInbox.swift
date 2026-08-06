@@ -6,6 +6,18 @@ struct InboxDiagram: Equatable {
     let title: String
     let source: String
     let createdAt: Date
+    let targetDevice: InboxTargetDevice
+}
+
+enum InboxTargetDevice: String, Codable, Equatable {
+    case any
+    case mac
+    case ipad
+}
+
+struct PendingInboxDiagram {
+    let diagram: InboxDiagram
+    fileprivate let fileURL: URL
 }
 
 struct ReviewCanvasInbox {
@@ -38,6 +50,14 @@ struct ReviewCanvasInbox {
     }
 
     func importNext() throws -> InboxDiagram? {
+        guard let pending = try peekNext() else {
+            return nil
+        }
+        try archive(pending)
+        return pending.diagram
+    }
+
+    func peekNext() throws -> PendingInboxDiagram? {
         guard let fileURL = pendingFiles.first else {
             return nil
         }
@@ -67,14 +87,21 @@ struct ReviewCanvasInbox {
             throw InboxError.emptySource
         }
 
-        try archive(fileURL)
-        return InboxDiagram(
-            diagramID: envelope.diagramID,
-            revisionID: envelope.revision.id,
-            title: envelope.title,
-            source: source,
-            createdAt: envelope.createdAt
+        return PendingInboxDiagram(
+            diagram: InboxDiagram(
+                diagramID: envelope.diagramID,
+                revisionID: envelope.revision.id,
+                title: envelope.title,
+                source: source,
+                createdAt: envelope.createdAt,
+                targetDevice: envelope.targetDevice ?? .any
+            ),
+            fileURL: fileURL
         )
+    }
+
+    func archive(_ pending: PendingInboxDiagram) throws {
+        try archive(pending.fileURL)
     }
 
     private var pendingFiles: [URL] {
@@ -143,6 +170,7 @@ private struct InboxEnvelope: Decodable {
     let diagramID: UUID
     let title: String
     let createdAt: Date
+    let targetDevice: InboxTargetDevice?
     let revision: InboxRevision
 
     private enum CodingKeys: String, CodingKey {
@@ -150,6 +178,7 @@ private struct InboxEnvelope: Decodable {
         case diagramID = "diagramId"
         case title
         case createdAt
+        case targetDevice
         case revision
     }
 }

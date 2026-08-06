@@ -4,7 +4,9 @@ import UniformTypeIdentifiers
 
 struct ReviewCanvasRootView: View {
     @ObservedObject var workspace: ReviewWorkspace
+    @ObservedObject var syncController: ReviewCanvasSyncController
     @State private var isFileImporterPresented = false
+    @State private var isSyncPresented = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
@@ -13,9 +15,12 @@ struct ReviewCanvasRootView: View {
                 .navigationSplitViewColumnWidth(min: 240, ideal: 300, max: 360)
         } detail: {
             VStack(spacing: 0) {
-                ReviewToolbar(workspace: workspace) {
-                    isFileImporterPresented = true
-                }
+                ReviewToolbar(
+                    workspace: workspace,
+                    syncController: syncController,
+                    openFile: { isFileImporterPresented = true },
+                    showSync: { isSyncPresented = true }
+                )
                 Divider()
                 ReviewDocumentView(workspace: workspace)
             }
@@ -45,17 +50,27 @@ struct ReviewCanvasRootView: View {
         } message: {
             Text(workspace.loadError ?? "알 수 없는 오류")
         }
+        .sheet(isPresented: $isSyncPresented) {
+            DeviceSyncPanel(syncController: syncController)
+        }
         .task {
+            syncController.bind(to: workspace)
+            syncController.start()
             #if os(macOS)
             await workspace.monitorInbox()
             #endif
+        }
+        .onDisappear {
+            syncController.stop()
         }
     }
 }
 
 private struct ReviewToolbar: View {
     @ObservedObject var workspace: ReviewWorkspace
+    @ObservedObject var syncController: ReviewCanvasSyncController
     let openFile: () -> Void
+    let showSync: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -73,6 +88,12 @@ private struct ReviewToolbar: View {
             .buttonStyle(.bordered)
             .help("로컬 MCP가 보낸 다음 대기 다이어그램 가져오기")
             #endif
+
+            Button(action: showSync) {
+                Label(syncController.toolbarTitle, systemImage: syncController.toolbarSymbol)
+            }
+            .buttonStyle(.bordered)
+            .accessibilityIdentifier("device-sync")
 
             Divider().frame(height: 24)
 
@@ -127,6 +148,81 @@ private struct ReviewToolbar: View {
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(.bar)
+    }
+}
+
+private struct DeviceSyncPanel: View {
+    @ObservedObject var syncController: ReviewCanvasSyncController
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("연결 상태") {
+                    Label(
+                        syncController.connectionState.localizedTitle,
+                        systemImage: syncController.toolbarSymbol
+                    )
+                    if let error = syncController.lastError {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundStyle(.red)
+                    }
+                }
+
+                if syncController.role == .mac {
+                    Section("iPad 연결 코드") {
+                        Text(syncController.pairingCode)
+                            .font(.system(size: 38, weight: .bold, design: .monospaced))
+                            .textSelection(.enabled)
+                        Text("iPad에서 이 Mac을 선택한 뒤 코드를 입력하세요. 코드는 TLS 암호화 연결에 사용됩니다.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Section("Mac 연결") {
+                        TextField("6자리 연결 코드", text: $syncController.enteredPairingCode)
+                            #if os(iOS)
+                            .keyboardType(.numberPad)
+                            .textContentType(.oneTimeCode)
+                            #endif
+
+                        if syncController.peers.isEmpty {
+                            ContentUnavailableView(
+                                "주변 Mac을 찾는 중",
+                                systemImage: "wifi",
+                                description: Text("두 기기에서 Review Canvas를 열고 같은 Wi-Fi에 연결하세요.")
+                            )
+                        } else {
+                            ForEach(syncController.peers) { peer in
+                                Button {
+                                    syncController.connect(to: peer)
+                                } label: {
+                                    Label(peer.name, systemImage: "desktopcomputer")
+                                }
+                            }
+                        }
+                    }
+                }
+
+                Section {
+                    Button("검색·공유 다시 시작") {
+                        syncController.start()
+                    }
+                    Button("연결 중지", role: .destructive) {
+                        syncController.stop()
+                    }
+                }
+            }
+            .formStyle(.grouped)
+            .navigationTitle("기기 연결")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("완료") { dismiss() }
+                }
+            }
+        }
+        .frame(minWidth: 420, minHeight: 420)
     }
 }
 
@@ -409,6 +505,48 @@ private extension ReviewMarkType {
             return .orange
         case .verify:
             return .red
+        }
+    }
+}
+
+private extension ReviewCanvasSyncController {
+    var toolbarTitle: String {
+        switch connectionState {
+        case let .connected(peerName):
+            return peerName
+        case .advertising:
+            return "iPad 대기 중"
+        case .searching:
+            return peers.isEmpty ? "Mac 찾는 중" : "Mac \(peers.count)대"
+        case let .connecting(peerName):
+            return "\(peerName) 연결 중"
+        case .failed:
+            return "연결 확인"
+        case .stopped:
+            return "기기 연결"
+        }
+    }
+
+    var toolbarSymbol: String {
+        connectionState.isConnected ? "ipad.and.iphone" : "wifi"
+    }
+}
+
+private extension PeerConnectionState {
+    var localizedTitle: String {
+        switch self {
+        case .stopped:
+            "중지됨"
+        case .searching:
+            "주변 Mac 검색 중"
+        case .advertising:
+            "iPad 연결 대기 중"
+        case let .connecting(peerName):
+            "\(peerName)에 연결 중"
+        case let .connected(peerName):
+            "\(peerName) 연결됨"
+        case let .failed(message):
+            "연결 오류: \(message)"
         }
     }
 }

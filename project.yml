@@ -36,9 +36,7 @@ targetTemplates:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.coldmans.review-canvas
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        GENERATE_INFOPLIST_FILE: "YES"
-        INFOPLIST_KEY_CFBundleDisplayName: Review Canvas
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.developer-tools
+        GENERATE_INFOPLIST_FILE: "NO"
 
 targets:
   ReviewCanvas-macOS:
@@ -50,7 +48,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.coldmans.review-canvas.macos
-        INFOPLIST_KEY_LSMinimumSystemVersion: "14.0"
+        INFOPLIST_FILE: App/macOS/Info.plist
         CODE_SIGN_IDENTITY: "-"
 
   ReviewCanvas-iPadOS:
@@ -62,10 +60,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: io.github.coldmans.review-canvas.ipados
+        INFOPLIST_FILE: App/iPadOS/Info.plist
         TARGETED_DEVICE_FAMILY: "2"
         SUPPORTS_MACCATALYST: "NO"
-        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: "YES"
-        INFOPLIST_KEY_UILaunchScreen_Generation: "YES"
 
   ReviewCanvasUITests-iPadOS:
     type: bundle.ui-testing
