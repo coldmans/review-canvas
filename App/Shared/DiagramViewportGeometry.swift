@@ -7,7 +7,7 @@ struct DiagramViewportGeometry: Equatable, Sendable {
     var height: Double
     var nodes: [DiagramNodeGeometry] = []
 
-    static let unavailable = DiagramViewportGeometry(x: 0, y: 0, width: 1, height: 1)
+    static let unavailable = DiagramViewportGeometry(x: 0, y: 0, width: 0, height: 0)
 
     var isAvailable: Bool {
         width > 0 && height > 0
@@ -31,6 +31,19 @@ struct DiagramViewportGeometry: Equatable, Sendable {
             x: min(1, max(0, (viewportX - x) / width)),
             y: min(1, max(0, (viewportY - y) / height))
         )
+    }
+
+    func contains(_ location: CGPoint, in size: CGSize) -> Bool {
+        guard isAvailable, size.width > 0, size.height > 0 else {
+            return false
+        }
+
+        let viewportX = Double(location.x / size.width)
+        let viewportY = Double(location.y / size.height)
+        return viewportX >= x
+            && viewportX <= x + width
+            && viewportY >= y
+            && viewportY <= y + height
     }
 
     func nodeID(at normalizedPoint: CGPoint) -> String? {

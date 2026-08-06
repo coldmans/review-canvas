@@ -45,7 +45,11 @@ struct ReviewCanvasRootView: View {
         } message: {
             Text(workspace.loadError ?? "알 수 없는 오류")
         }
-        .onAppear { workspace.refreshInboxCount() }
+        .task {
+            #if os(macOS)
+            await workspace.monitorInbox()
+            #endif
+        }
     }
 }
 
@@ -62,13 +66,12 @@ private struct ReviewToolbar: View {
 
             #if os(macOS)
             Button {
-                workspace.importLatestInboxDiagram()
+                workspace.importNextInboxDiagram()
             } label: {
                 Label("AI Inbox \(workspace.inboxCount)", systemImage: "tray.and.arrow.down")
             }
             .buttonStyle(.bordered)
-            .disabled(workspace.inboxCount == 0)
-            .help("로컬 MCP가 보낸 최신 다이어그램 열기")
+            .help("로컬 MCP가 보낸 다음 대기 다이어그램 가져오기")
             #endif
 
             Divider().frame(height: 24)
@@ -177,14 +180,24 @@ private struct ReviewDocumentView: View {
                     source: workspace.source,
                     zoom: workspace.zoom,
                     onGeometryChange: { geometry = $0 },
-                    onError: { workspace.renderError = $0 }
+                    onError: { error in
+                        workspace.renderError = error
+                        if error != nil {
+                            geometry = .unavailable
+                        }
+                    }
                 )
 
-                if workspace.selectedReviewType != nil && !workspace.isInkMode {
+                if workspace.selectedReviewType != nil
+                    && !workspace.isInkMode
+                    && geometry.isAvailable {
                     Rectangle()
                         .fill(Color.white.opacity(0.001))
                         .contentShape(Rectangle())
                         .onTapGesture(coordinateSpace: .local) { location in
+                            guard geometry.contains(location, in: proxy.size) else {
+                                return
+                            }
                             let point = geometry.normalizedPoint(for: location, in: proxy.size)
                             workspace.addReviewMark(at: point, nodeID: geometry.nodeID(at: point))
                         }
@@ -200,20 +213,22 @@ private struct ReviewDocumentView: View {
                         }
                 }
 
-                ForEach(workspace.currentReviewMarks) { mark in
-                    ReviewMarkButton(
-                        mark: mark,
-                        isSelected: workspace.selectedMarkID == mark.id,
-                        action: { workspace.selectMark(mark.id) }
-                    )
-                    .position(
-                        geometry.location(
-                            forNormalizedX: mark.anchor.position.x,
-                            y: mark.anchor.position.y,
-                            in: proxy.size
+                if geometry.isAvailable {
+                    ForEach(workspace.currentReviewMarks) { mark in
+                        ReviewMarkButton(
+                            mark: mark,
+                            isSelected: workspace.selectedMarkID == mark.id,
+                            action: { workspace.selectMark(mark.id) }
                         )
-                    )
-                    .allowsHitTesting(!workspace.isInkMode)
+                        .position(
+                            geometry.location(
+                                forNormalizedX: mark.anchor.position.x,
+                                y: mark.anchor.position.y,
+                                in: proxy.size
+                            )
+                        )
+                        .allowsHitTesting(!workspace.isInkMode)
+                    }
                 }
 
                 #if os(iOS)
@@ -230,6 +245,9 @@ private struct ReviewDocumentView: View {
             .clipped()
         }
         .background(PlatformColors.canvasBackground)
+        .onChange(of: workspace.source) { _, _ in
+            geometry = .unavailable
+        }
     }
 }
 

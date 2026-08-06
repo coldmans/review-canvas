@@ -89,6 +89,7 @@
         <section id="diagram" aria-live="polite"></section>
     </main>
 
+    <script src="viewer-geometry.js"></script>
     <script src="mermaid.min.js"></script>
     <script>
         function reportStatus(type, message = "", details = {}) {
@@ -130,6 +131,7 @@
             const isDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
             let renderSequence = 0;
             let currentZoom = 1;
+            let currentRenderID = null;
             let geometryFrame;
 
             function reportGeometry() {
@@ -143,19 +145,19 @@
                     const rect = svg.getBoundingClientRect();
                     const viewportWidth = Math.max(1, window.innerWidth);
                     const viewportHeight = Math.max(1, window.innerHeight);
-                    const viewBox = svg.viewBox.baseVal;
-                    const nodes = viewBox.width > 0 && viewBox.height > 0
-                        ? Array.from(svg.querySelectorAll(".node[id]")).map(node => {
-                            const bounds = node.getBBox();
-                            return {
-                                id: node.id,
-                                x: (bounds.x - viewBox.x) / viewBox.width,
-                                y: (bounds.y - viewBox.y) / viewBox.height,
-                                width: bounds.width / viewBox.width,
-                                height: bounds.height / viewBox.height
-                            };
+                    const nodes = Array.from(svg.querySelectorAll(".node[data-id], .node[id]"))
+                        .map(node => {
+                            const normalized = window.ReviewCanvasGeometry.normalizeRect(
+                                rect,
+                                node.getBoundingClientRect()
+                            );
+                            const id = window.ReviewCanvasGeometry.semanticNodeID(
+                                node,
+                                currentRenderID
+                            );
+                            return normalized && id ? { id, ...normalized } : null;
                         })
-                        : [];
+                        .filter(Boolean);
 
                     reportStatus("geometry", "", {
                         x: rect.left / viewportWidth,
@@ -212,12 +214,25 @@
 
             window.renderMermaid = async function (source) {
                 const host = document.getElementById("diagram");
+                const requestSequence = ++renderSequence;
+                const renderId = `mermaid-viewer-${requestSequence}`;
+                currentRenderID = null;
+                window.cancelAnimationFrame(geometryFrame);
                 host.replaceChildren();
+                reportStatus("rendering");
 
                 try {
                     await mermaid.parse(source);
-                    const renderId = `mermaid-viewer-${++renderSequence}`;
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
+
                     const result = await mermaid.render(renderId, source);
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
+
+                    currentRenderID = renderId;
                     host.innerHTML = result.svg;
 
                     if (result.bindFunctions) {
@@ -227,6 +242,9 @@
                     reportGeometry();
                     reportStatus("rendered");
                 } catch (error) {
+                    if (requestSequence !== renderSequence) {
+                        return;
+                    }
                     showError(error);
                     reportStatus("error", error?.message ?? String(error));
                 }

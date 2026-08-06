@@ -28,7 +28,7 @@ flowchart LR
     Pad -.-> Sync
 ```
 
-`send_diagram`으로 보낸 다이어그램은 같은 Mac의 로컬 Inbox에 대기하고, macOS 앱의 **AI Inbox** 버튼으로 가져옵니다. macOS와 iPadOS 앱은 코드와 데이터 형식을 공유하지만 각 기기의 작업공간은 현재 서로 독립적입니다.
+`send_diagram`으로 보낸 다이어그램은 같은 Mac의 로컬 Inbox에 대기합니다. 열린 macOS 앱이 약 1초 간격으로 새 항목을 감지하면 **AI Inbox** 버튼으로 가져올 수 있습니다. macOS와 iPadOS 앱은 코드와 데이터 형식을 공유하지만 각 기기의 작업공간은 현재 서로 독립적입니다.
 
 ## 구현된 기능
 
@@ -37,7 +37,7 @@ flowchart LR
 - Mermaid 11 런타임을 앱에 포함한 오프라인 렌더링
 - Mermaid 원문과 Markdown의 첫 번째 `mermaid` 코드 블록 열기
 - 확대, 축소, 100% 복원
-- SVG의 정규화 좌표와 Mermaid node ID를 이용한 검토 표시 위치 보존
+- 실제 렌더된 SVG의 정규화 좌표로 검토 표시 위치를 보존하고, 지원되는 노드에서는 Mermaid source ID를 의미 정보로 함께 저장
 - `?` 설명 필요, `✎` 수정 필요, `!` 검토 필요 표시와 해결 상태 처리
 - iPadOS PencilKit 필기 오버레이와 도구 선택기
 - 다이어그램, 검토 표시, 필기 데이터를 기기별 `workspace.json`에 로컬 저장
@@ -58,6 +58,7 @@ flowchart LR
 ## 요구 사항
 
 - macOS 14 이상
+- iPadOS 17 이상
 - Xcode와 Xcode Command Line Tools
 - Swift 6을 지원하는 Xcode
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen)
@@ -84,7 +85,7 @@ Xcode에서 다음 scheme을 선택합니다.
 - `ReviewCanvas-macOS`: Mac 앱
 - `ReviewCanvas-iPadOS`: iPad 시뮬레이터 또는 iPad 앱
 
-실제 iPad에 설치할 때는 Xcode에서 자신의 Apple Developer Team과 서명을 설정해야 합니다. 저장소에는 개발 팀을 지정하지 않으며, CI와 시뮬레이터 명령에서만 코드 서명을 끕니다.
+실제 iPad에 설치할 때는 Xcode에서 자신의 Apple Developer Team과 서명을 설정해야 합니다. 저장소에는 개발 팀을 지정하지 않습니다. CI와 시뮬레이터 빌드는 서명을 끄고, 아래 macOS 빌드 스크립트는 로컬 실행용 ad-hoc 서명을 사용합니다.
 
 ### macOS Release 앱 만들기
 
@@ -92,7 +93,7 @@ Xcode에서 다음 scheme을 선택합니다.
 ./scripts/build-app.sh
 ```
 
-스크립트가 고정된 npm lockfile로 Mermaid 런타임을 준비하고, XcodeGen 프로젝트를 다시 만든 다음 Release 앱을 빌드합니다. 결과는 `dist/Review Canvas.app`입니다. 앱 실행 중 Mermaid 렌더링을 위해 외부 CDN에 접속하지 않습니다.
+스크립트가 고정된 npm lockfile로 Mermaid 런타임을 준비하고, XcodeGen 프로젝트를 다시 만든 다음 Release 앱을 빌드합니다. 결과는 `dist/Review Canvas.app`입니다. 이 결과물은 로컬 실행용 ad-hoc 서명 앱이며 Developer ID 공증이나 App Store 배포본은 아닙니다. 앱 실행 중 Mermaid 렌더링을 위해 외부 CDN에 접속하지 않습니다.
 
 ## 로컬 MCP 연결
 
@@ -122,7 +123,7 @@ MCP 클라이언트에는 저장소 위치에 맞는 절대 경로를 등록합�
 | 도구 | 역할 |
 | --- | --- |
 | `send_diagram` | Mermaid를 검증하고 Mac 로컬 Inbox에 새 다이어그램을 대기시킵니다. |
-| `list_review_marks` | MCP 저장소의 검토 표시를 조건에 맞게 조회합니다. |
+| `list_review_marks` | MCP 저장소에 이미 들어 있는 검토 표시를 조건에 맞게 조회합니다. |
 | `propose_revision` | 예상 revision을 확인한 뒤 원본을 덮어쓰지 않고 수정안을 만듭니다. |
 | `resolve_review_mark` | 예상 상태를 선택적으로 확인하고 MCP 저장소의 검토 표시를 해결합니다. |
 
@@ -161,6 +162,7 @@ npm --prefix mcp test
 
 # 앱 리소스와 프로젝트 준비
 npm ci
+npm test
 xcodegen generate
 
 # macOS 앱 단위 테스트
@@ -172,14 +174,14 @@ xcodebuild \
   CODE_SIGNING_ALLOWED=NO \
   test
 
-# iPadOS 시뮬레이터용 컴파일
+# iPadOS 앱과 UI 테스트 시뮬레이터용 컴파일
 xcodebuild \
   -project ReviewCanvas.xcodeproj \
   -scheme ReviewCanvas-iPadOS \
   -configuration Debug \
   -destination 'generic/platform=iOS Simulator' \
   CODE_SIGNING_ALLOWED=NO \
-  build
+  build-for-testing
 ```
 
 iPad UI 테스트도 `ReviewCanvas-iPadOS` scheme에 포함되어 있습니다. Apple Pencil의 압력·기울기와 실제 기기 사용감은 시뮬레이터가 아닌 iPad에서 별도로 확인해야 합니다.

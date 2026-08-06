@@ -1,6 +1,6 @@
 # Review Canvas MCP
 
-Review Canvas에 Mermaid 다이어그램을 보내고 검토 표시를 다시 읽는 로컬 stdio MCP 서버입니다. 네트워크 서버를 열지 않으며, 모든 데이터는 로컬 JSON 파일에 저장합니다.
+Review Canvas에 Mermaid 다이어그램을 보내고 MCP 저장소에 있는 검토 표시와 revision을 관리하는 로컬 stdio MCP 서버입니다. 네트워크 서버를 열지 않으며, 모든 데이터는 로컬 JSON 파일에 저장합니다.
 
 ## 실행
 
@@ -34,6 +34,8 @@ MCP 클라이언트에는 실행 파일의 절대 경로를 등록합니다.
 | `resolve_review_mark` | `diagramId`, `markId`, 선택 `expectedStatus` | `status: resolved` |
 
 검토 표시의 `type`은 `explain`, `change`, `verify`이고, `status`는 `open`, `inProgress`, `resolved`, `dismissed`입니다.
+
+`targetDevice`는 현재 envelope에 남기는 metadata입니다. `ipad`를 지정해도 iPad로 직접 전송되지는 않으며, 모든 envelope는 같은 Mac의 Inbox에 저장됩니다. 앱에서 만든 검토 표시를 MCP `store.json`으로 보내는 bridge도 아직 구현 전이므로, 조회·해결 도구는 MCP 저장소에 이미 존재하는 항목에만 동작합니다.
 
 ## 로컬 저장 위치
 

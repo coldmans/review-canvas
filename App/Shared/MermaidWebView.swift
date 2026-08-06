@@ -188,6 +188,8 @@ final class MermaidWebCoordinator: NSObject, WKNavigationDelegate, WKScriptMessa
                 applyZoom(in: webView)
                 render(in: webView)
             }
+        case "rendering":
+            onGeometryChange(.unavailable)
         case "rendered":
             onError(nil)
         case "geometry":

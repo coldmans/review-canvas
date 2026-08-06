@@ -47,8 +47,7 @@ struct ReviewCanvasInbox {
         }
 
         let data = try Data(contentsOf: fileURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
+        let decoder = ReviewCanvasDateCoding.makeDecoder()
         let envelope = try decoder.decode(InboxEnvelope.self, from: data)
 
         guard envelope.schemaVersion == 1 else {

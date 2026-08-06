@@ -12,10 +12,13 @@
 		0780115AE3B073033A85E207 /* ReviewCanvasUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FFCD5F590250494E53790B1 /* ReviewCanvasUITests.swift */; };
 		1D8404AFB9BBC269A8E581DC /* ReviewCanvasRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */; };
 		2141C406DE00601466FF4234 /* MacPlatformSupport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F83D0DB5032F0330EF3C02A /* MacPlatformSupport.swift */; };
+		2D7908BCAB5C7DDAB3899255 /* ReviewCanvasDateCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */; };
 		2E36BD68D30463C89BCC1398 /* MermaidWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73B1506B5D91A525C638760 /* MermaidWebView.swift */; };
 		415BED4B0C0612D2883CB496 /* MermaidWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D73B1506B5D91A525C638760 /* MermaidWebView.swift */; };
+		49D48BAE1BC9C1EF80F2DD87 /* viewer-geometry.js in Resources */ = {isa = PBXBuildFile; fileRef = 8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */; };
 		4A8D049F5F960E54EFB42BAC /* ReviewCanvasInbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */; };
 		5969DDE80A6A73079A39CD42 /* DiagramViewportGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */; };
+		605C36248EFFBC891BE151B6 /* ReviewCanvasDateCoding.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */; };
 		61B6570A55E5637F20E959EE /* ReviewWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */; };
 		72C349124E3F7A4E5E670F7D /* mermaid.min.js in Resources */ = {isa = PBXBuildFile; fileRef = AFB8E2E1ED96D4BF42FBA9A5 /* mermaid.min.js */; };
 		7359668D8B96F19E5A46D535 /* ReviewCanvasCore in Frameworks */ = {isa = PBXBuildFile; productRef = B289C40A6D12AB1A2A9CD1B1 /* ReviewCanvasCore */; };
@@ -25,6 +28,7 @@
 		7834A0D420AF07DEE208B0C3 /* ReviewWorkspace.swift in Sources */ = {isa = PBXBuildFile; fileRef = 915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */; };
 		7E087B606449BC7A378D64E5 /* ReviewCanvasRootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */; };
 		950D085DF5F82596A0C3C6E4 /* MermaidSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A43B6EDF6AD838043CF3E2C /* MermaidSource.swift */; };
+		9C1EDAB1BC899D5322A41AE7 /* viewer-geometry.js in Resources */ = {isa = PBXBuildFile; fileRef = 8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */; };
 		9D5A8D8A0E97373B7471567B /* viewer.html in Resources */ = {isa = PBXBuildFile; fileRef = D946C3BEFC3EE67763ECF5F3 /* viewer.html */; };
 		A414B031D39081FF7FAC7A2C /* ReviewCanvasApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */; };
 		B20ED2A8B372D8F489962AE8 /* DiagramViewportGeometry.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2758770F8FD3BB07497EA9D6 /* DiagramViewportGeometry.swift */; };
@@ -61,6 +65,7 @@
 		57B43B934F58E30ED38DCDD1 /* ReviewCanvasUITests-iPadOS.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = "ReviewCanvasUITests-iPadOS.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasInbox.swift; sourceTree = "<group>"; };
 		6FFCD5F590250494E53790B1 /* ReviewCanvasUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasUITests.swift; sourceTree = "<group>"; };
+		8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = "viewer-geometry.js"; sourceTree = "<group>"; };
 		857C1C3BBC4D46BE73D3042A /* LICENSE */ = {isa = PBXFileReference; path = LICENSE; sourceTree = "<group>"; };
 		915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewWorkspace.swift; sourceTree = "<group>"; };
 		926049D8CCBEBCA2278CCA32 /* PencilCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PencilCanvasView.swift; sourceTree = "<group>"; };
@@ -71,6 +76,7 @@
 		C7879B516FAA04556C01A67A /* ReviewCanvasCore */ = {isa = PBXFileReference; lastKnownFileType = folder; name = ReviewCanvasCore; path = Packages/ReviewCanvasCore; sourceTree = SOURCE_ROOT; };
 		D73B1506B5D91A525C638760 /* MermaidWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MermaidWebView.swift; sourceTree = "<group>"; };
 		D946C3BEFC3EE67763ECF5F3 /* viewer.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = viewer.html; sourceTree = "<group>"; };
+		DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewCanvasDateCoding.swift; sourceTree = "<group>"; };
 		E3128463AF3D2A3DBC4F7989 /* ReviewCanvas-macOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ReviewCanvas-macOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -97,6 +103,7 @@
 		07218059F471458554A31930 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				8514A4B65105A9495C5AD1B0 /* viewer-geometry.js */,
 				D946C3BEFC3EE67763ECF5F3 /* viewer.html */,
 			);
 			path = Resources;
@@ -144,6 +151,7 @@
 				4A43B6EDF6AD838043CF3E2C /* MermaidSource.swift */,
 				D73B1506B5D91A525C638760 /* MermaidWebView.swift */,
 				106C5E8B25CDDBE8624EED2F /* ReviewCanvasApp.swift */,
+				DE3E6EF0D75C8AE36982C548 /* ReviewCanvasDateCoding.swift */,
 				6F84629D6FED3E70B8F09623 /* ReviewCanvasInbox.swift */,
 				AB0BACE58826F03C8F71804E /* ReviewCanvasRootView.swift */,
 				915520A1CDB2420D93F4C01A /* ReviewWorkspace.swift */,
@@ -301,7 +309,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 2600;
+				LastUpgradeCheck = 1640;
 				TargetAttributes = {
 					616C501478E3B9F9D3AFAB63 = {
 						DevelopmentTeam = "";
@@ -350,6 +358,7 @@
 			files = (
 				77B31B99061024A51475BABF /* LICENSE in Resources */,
 				01E06CE02B538FFA6B65B792 /* mermaid.min.js in Resources */,
+				9C1EDAB1BC899D5322A41AE7 /* viewer-geometry.js in Resources */,
 				9D5A8D8A0E97373B7471567B /* viewer.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -360,6 +369,7 @@
 			files = (
 				7769B9531DA3BF16B44A7274 /* LICENSE in Resources */,
 				72C349124E3F7A4E5E670F7D /* mermaid.min.js in Resources */,
+				49D48BAE1BC9C1EF80F2DD87 /* viewer-geometry.js in Resources */,
 				D4AAF03EF86839999BCB90DF /* viewer.html in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -384,6 +394,7 @@
 				2E36BD68D30463C89BCC1398 /* MermaidWebView.swift in Sources */,
 				B692566D410C2576ACC3E274 /* PencilCanvasView.swift in Sources */,
 				F8782EC4F2E8F5CE8FFC2434 /* ReviewCanvasApp.swift in Sources */,
+				605C36248EFFBC891BE151B6 /* ReviewCanvasDateCoding.swift in Sources */,
 				4A8D049F5F960E54EFB42BAC /* ReviewCanvasInbox.swift in Sources */,
 				7E087B606449BC7A378D64E5 /* ReviewCanvasRootView.swift in Sources */,
 				61B6570A55E5637F20E959EE /* ReviewWorkspace.swift in Sources */,
@@ -407,6 +418,7 @@
 				73FC32311D179817D3B1F97A /* MermaidSource.swift in Sources */,
 				415BED4B0C0612D2883CB496 /* MermaidWebView.swift in Sources */,
 				A414B031D39081FF7FAC7A2C /* ReviewCanvasApp.swift in Sources */,
+				2D7908BCAB5C7DDAB3899255 /* ReviewCanvasDateCoding.swift in Sources */,
 				CE8B1DAD06901CA124B47507 /* ReviewCanvasInbox.swift in Sources */,
 				1D8404AFB9BBC269A8E581DC /* ReviewCanvasRootView.swift in Sources */,
 				7834A0D420AF07DEE208B0C3 /* ReviewWorkspace.swift in Sources */,

@@ -168,7 +168,20 @@ final class ReviewWorkspace: ObservableObject {
         inboxCount = inbox.pendingCount
     }
 
-    func importLatestInboxDiagram() {
+    func monitorInbox(pollIntervalNanoseconds: UInt64 = 1_000_000_000) async {
+        refreshInboxCount()
+
+        while !Task.isCancelled {
+            do {
+                try await Task<Never, Never>.sleep(nanoseconds: pollIntervalNanoseconds)
+            } catch {
+                return
+            }
+            refreshInboxCount()
+        }
+    }
+
+    func importNextInboxDiagram() {
         do {
             guard let item = try inbox.importNext() else {
                 refreshInboxCount()
@@ -295,8 +308,7 @@ struct WorkspacePersistence {
 
         do {
             let data = try Data(contentsOf: fileURL)
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
+            let decoder = ReviewCanvasDateCoding.makeDecoder()
             return .loaded(try decoder.decode(PersistedWorkspace.self, from: data))
         } catch {
             return .corrupt(error, backupURL: backupCorruptWorkspace())
