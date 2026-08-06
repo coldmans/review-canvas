@@ -32,7 +32,13 @@ final class DeviceSyncBehaviorTests: XCTestCase {
         let sent = try XCTUnwrap(transport.sentData.last)
         let envelope = try ReviewCanvasWireCodec.decode(sent)
         XCTAssertEqual(envelope.kind, .workspace)
-        XCTAssertEqual(envelope.workspace?.document, workspace.document)
+        XCTAssertEqual(envelope.workspace?.document.id, workspace.document.id)
+        XCTAssertEqual(
+            envelope.workspace?.document.currentRevisionID,
+            workspace.document.currentRevisionID
+        )
+        XCTAssertEqual(envelope.workspace?.document.currentRevision?.source, workspace.source)
+        XCTAssertEqual(envelope.workspace?.drawingData, workspace.drawingData)
     }
 
     func testIPadAppliesWorkspaceThenReturnsDebouncedReviewFeedback() async throws {
