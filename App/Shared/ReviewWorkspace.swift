@@ -42,13 +42,15 @@ final class ReviewWorkspace: ObservableObject {
             drawingData = stored.drawingData
             drawingUpdatedAt = stored.drawingUpdatedAt ?? stored.document.updatedAt
         case .missing:
-            document = Self.makeSampleDocument()
+            let sample = Self.makeSampleDocument()
+            document = sample
             drawingData = Data()
-            drawingUpdatedAt = document.updatedAt
+            drawingUpdatedAt = sample.updatedAt
         case let .corrupt(error, backupURL):
-            document = Self.makeSampleDocument()
+            let sample = Self.makeSampleDocument()
+            document = sample
             drawingData = Data()
-            drawingUpdatedAt = document.updatedAt
+            drawingUpdatedAt = sample.updatedAt
             if let backupURL {
                 loadError = "저장된 작업공간이 손상되어 \(backupURL.lastPathComponent)로 보관했습니다. \(error.localizedDescription)"
             } else {
